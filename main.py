@@ -135,13 +135,13 @@ class CanvasWrapper:
 
         self.view_top = self.grid.add_view(0, 0, bgcolor='cyan')
 
-        # image_data = _generate_random_image_data(IMAGE_SHAPE)
-        # self.image = visuals.Image(
-        #     image_data,
-        #     texture_format="auto",
-        #     cmap="viridis",
-        #     parent=self.view_top.scene,
-        # )
+        image_data = _generate_random_image_data(IMAGE_SHAPE)
+        self.image = visuals.Image(
+             image_data,
+             texture_format="auto",
+            cmap="viridis",
+             parent=self.view_top.scene,
+         )
         self.view_top.camera = "panzoom"
         self.view_top.camera.set_range(x=(0, IMAGE_SHAPE[1]), y=(0, IMAGE_SHAPE[0]), margin=0)
 
