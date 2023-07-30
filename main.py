@@ -1,0 +1,163 @@
+# main_window_template.py
+# Import necessary modules
+import sys
+import numpy as np
+from PyQt6 import QtWidgets
+from PyQt6.QtWidgets import (QApplication, QMainWindow,QFileDialog)
+from PyQt6.QtGui import QAction
+from vispy.scene import SceneCanvas, visuals
+from vispy.app import use_app
+
+IMAGE_SHAPE = (600, 800)  # (height, width)
+CANVAS_SIZE = (800, 600)  # (width, height)
+NUM_LINE_POINTS = 200
+
+COLORMAP_CHOICES = ["viridis", "reds", "blues"]
+LINE_COLOR_CHOICES = ["black", "red", "blue"]
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super().__init__()
+        self.initializeUI()
+
+    def initializeUI(self):
+        """Set up the application's GUI."""
+        self.setMinimumSize(1000, 900)
+        self.setWindowTitle("Main Window Template")
+        self.setUpMainWindow()
+        self.createActions()
+        self.createMenu()
+        self.show()
+
+    def setUpMainWindow(self):
+        """Create and arrange widgets in the main window."""
+        central_widget = QtWidgets.QWidget()
+        main_layout = QtWidgets.QHBoxLayout()
+
+        self._controls = Controls()
+        main_layout.addWidget(self._controls)
+        self._canvas_wrapper = CanvasWrapper()
+        main_layout.addWidget(self._canvas_wrapper.canvas.native)
+
+        central_widget.setLayout(main_layout)
+        self.setCentralWidget(central_widget)
+
+        self._connect_controls()
+
+    def _connect_controls(self):
+        self._controls.colormap_chooser.currentTextChanged.connect(self._canvas_wrapper.set_image_colormap)
+        self._controls.line_color_chooser.currentTextChanged.connect(self._canvas_wrapper.set_line_color)
+
+    def createActions(self):
+        """Create the application's menu actions."""
+        # Create actions for File menu
+        self.quit_act = QAction("&Quit")
+        self.quit_act.setShortcut("Ctrl+Q")
+        self.quit_act.triggered.connect(self.close)
+
+        self.open_act = QAction("&Open")
+        self.open_act.setShortcut("Ctrl+O")
+        self.open_act.triggered.connect(self.openFile)
+        self.save_act = QAction("&Save")
+        self.save_act.setShortcut("Ctrl+S")
+        self.save_act.triggered.connect(self.saveToFile)
+
+    def createMenu(self):
+        """Create the application's menu bar."""
+        self.menuBar().setNativeMenuBar(False)
+        # Create file menu and add actions
+        file_menu = self.menuBar().addMenu("File")
+        file_menu.addSeparator()
+        file_menu.addAction(self.open_act)
+        file_menu.addAction(self.save_act)
+        file_menu.addAction(self.quit_act)
+
+    def openFile(self):
+        """Open a text or html file and display its contents
+        in the text edit field."""
+        file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Csv Files (*.csv)")
+        if file_name:
+            with open(file_name, "r") as f:
+                notepad_text = f.read()
+            self.text_edit.setText(notepad_text)
+
+    def saveToFile(self):
+        """If the save button is clicked, display dialog
+        asking user if they want to save the text in the text
+        edit field to a text or rich text file."""
+
+        #file_name, _ = QFileDialog.getSaveFileName(self, "Save File", " ", "")
+        #if file_name.endswith(".txt"):
+        #    notepad_text = self.text_edit.toPlainText()
+        #with open(file_name, "w") as f:
+        #    f.write(notepad_text)
+
+class Controls(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        layout = QtWidgets.QVBoxLayout()
+        self.colormap_label = QtWidgets.QLabel("Image Colormap:")
+        layout.addWidget(self.colormap_label)
+        self.colormap_chooser = QtWidgets.QComboBox()
+        self.colormap_chooser.addItems(COLORMAP_CHOICES)
+        layout.addWidget(self.colormap_chooser)
+
+        self.line_color_label = QtWidgets.QLabel("Line color:")
+        layout.addWidget(self.line_color_label)
+        self.line_color_chooser = QtWidgets.QComboBox()
+        self.line_color_chooser.addItems(LINE_COLOR_CHOICES)
+        layout.addWidget(self.line_color_chooser)
+
+        layout.addStretch(1)
+        self.setLayout(layout)
+
+
+class CanvasWrapper:
+    def __init__(self):
+        self.canvas = SceneCanvas(size=CANVAS_SIZE)
+        self.grid = self.canvas.central_widget.add_grid()
+
+        self.view_top = self.grid.add_view(0, 0, bgcolor='cyan')
+        image_data = _generate_random_image_data(IMAGE_SHAPE)
+        self.image = visuals.Image(
+            image_data,
+            texture_format="auto",
+            cmap="viridis",
+            parent=self.view_top.scene,
+        )
+        self.view_top.camera = "panzoom"
+        self.view_top.camera.set_range(x=(0, IMAGE_SHAPE[1]), y=(0, IMAGE_SHAPE[0]), margin=0)
+
+        self.view_bot = self.grid.add_view(1, 0, bgcolor='#c0c0c0')
+        line_data = _generate_random_line_positions(NUM_LINE_POINTS)
+        self.line = visuals.Line(line_data, parent=self.view_bot.scene, color='black')
+        self.view_bot.camera = "panzoom"
+        self.view_bot.camera.set_range(x=(0, NUM_LINE_POINTS), y=(0, 1))
+
+    def set_image_colormap(self, cmap_name: str):
+        print(f"Changing image colormap to {cmap_name}")
+        self.image.cmap = cmap_name
+
+    def set_line_color(self, color):
+        print(f"Changing line color to {color}")
+        self.line.set_data(color=color)
+
+def _generate_random_image_data(shape, dtype=np.float32):
+    rng = np.random.default_rng()
+    data = rng.random(shape, dtype=dtype)
+    return data
+
+def _generate_random_line_positions(num_points, dtype=np.float32):
+    rng = np.random.default_rng()
+    pos = np.empty((num_points, 2), dtype=np.float32)
+    pos[:, 0] = np.arange(num_points)
+    pos[:, 1] = rng.random((num_points,), dtype=dtype)
+    return pos
+
+
+if __name__ == '__main__':
+    app = use_app("pyqt6")
+    app.create()
+    win = MainWindow()
+    win.show()
+    app.run()
