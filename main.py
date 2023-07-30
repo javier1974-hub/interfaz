@@ -10,10 +10,12 @@ from vispy.app import use_app
 
 IMAGE_SHAPE = (600, 800)  # (height, width)
 CANVAS_SIZE = (800, 600)  # (width, height)
-NUM_LINE_POINTS = 200
+NUM_LINE_POINTS = 1024
 
 COLORMAP_CHOICES = ["viridis", "reds", "blues"]
 LINE_COLOR_CHOICES = ["black", "red", "blue"]
+
+pcg = np.zeros(1024)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -42,11 +44,8 @@ class MainWindow(QMainWindow):
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
-        self._connect_controls()
+        self.createActions()
 
-    def _connect_controls(self):
-        self._controls.colormap_chooser.currentTextChanged.connect(self._canvas_wrapper.set_image_colormap)
-        self._controls.line_color_chooser.currentTextChanged.connect(self._canvas_wrapper.set_line_color)
 
     def createActions(self):
         """Create the application's menu actions."""
@@ -58,9 +57,15 @@ class MainWindow(QMainWindow):
         self.open_act = QAction("&Open")
         self.open_act.setShortcut("Ctrl+O")
         self.open_act.triggered.connect(self.openFile)
+
         self.save_act = QAction("&Save")
         self.save_act.setShortcut("Ctrl+S")
         self.save_act.triggered.connect(self.saveToFile)
+
+        self._controls.colormap_chooser.currentTextChanged.connect(self._canvas_wrapper.set_image_colormap)
+        self._controls.line_color_chooser.currentTextChanged.connect(self._canvas_wrapper.set_line_color)
+
+
 
     def createMenu(self):
         """Create the application's menu bar."""
@@ -77,9 +82,20 @@ class MainWindow(QMainWindow):
         in the text edit field."""
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Csv Files (*.csv)")
         if file_name:
-            with open(file_name, "r") as f:
-                notepad_text = f.read()
-            self.text_edit.setText(notepad_text)
+            pcg = np.genfromtxt(file_name, dtype=float, delimiter=',')  # abro el .csv
+
+            pos = np.empty((len(pcg), 2), dtype=np.float32)
+            pos[:, 0] = np.arange(len(pcg))
+            pos[:, 1] = pcg
+
+            self._canvas_wrapper.set_signal(pos)
+
+
+
+            print(pcg.shape)
+            print(len(pcg))
+
+
 
     def saveToFile(self):
         """If the save button is clicked, display dialog
@@ -118,19 +134,23 @@ class CanvasWrapper:
         self.grid = self.canvas.central_widget.add_grid()
 
         self.view_top = self.grid.add_view(0, 0, bgcolor='cyan')
-        image_data = _generate_random_image_data(IMAGE_SHAPE)
-        self.image = visuals.Image(
-            image_data,
-            texture_format="auto",
-            cmap="viridis",
-            parent=self.view_top.scene,
-        )
+
+        # image_data = _generate_random_image_data(IMAGE_SHAPE)
+        # self.image = visuals.Image(
+        #     image_data,
+        #     texture_format="auto",
+        #     cmap="viridis",
+        #     parent=self.view_top.scene,
+        # )
         self.view_top.camera = "panzoom"
         self.view_top.camera.set_range(x=(0, IMAGE_SHAPE[1]), y=(0, IMAGE_SHAPE[0]), margin=0)
 
         self.view_bot = self.grid.add_view(1, 0, bgcolor='#c0c0c0')
-        line_data = _generate_random_line_positions(NUM_LINE_POINTS)
-        self.line = visuals.Line(line_data, parent=self.view_bot.scene, color='black')
+
+        #line_data = _generate_random_line_positions(NUM_LINE_POINTS)
+        # line_data = _generate_random_line_positions(NUM_LINE_POINTS)
+        # self.line = visuals.Line(line_data, parent=self.view_bot.scene, color='black')
+
         self.view_bot.camera = "panzoom"
         self.view_bot.camera.set_range(x=(0, NUM_LINE_POINTS), y=(0, 1))
 
@@ -141,6 +161,10 @@ class CanvasWrapper:
     def set_line_color(self, color):
         print(f"Changing line color to {color}")
         self.line.set_data(color=color)
+
+    def set_signal(self,signal):
+        self.line=visuals.Line(signal, parent=self.view_bot.scene, color='black')
+
 
 def _generate_random_image_data(shape, dtype=np.float32):
     rng = np.random.default_rng()
@@ -154,6 +178,15 @@ def _generate_random_line_positions(num_points, dtype=np.float32):
     pos[:, 1] = rng.random((num_points,), dtype=dtype)
     return pos
 
+def _generate_line_positions(num_points, dtype=np.float32):
+    rng = np.random.default_rng()
+    #np.genfromtxt(file_name, dtype=float, delimiter=',')
+    pos = np.empty((num_points, 2), dtype=np.float32)
+    pos[:, 0] = np.arange(num_points)
+    pos[:, 1] = pcg #rng.random((num_points,), dtype=dtype)
+    print(pos[:, 0])
+    print(pos[:, 1])
+    return pos
 
 if __name__ == '__main__':
     app = use_app("pyqt6")
