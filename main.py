@@ -135,37 +135,46 @@ class CanvasWrapper:
 
         image_data = _generate_random_image_data(IMAGE_SHAPE)
         self.image = visuals.Image(
-             image_data,
-             texture_format="auto",
-             cmap="viridis",
-             #parent=self.view_top.scene,
-         )
+              image_data,
+              texture_format="auto",
+              cmap="viridis",
+          )
 
-        self.x_axis = AxisWidget(axis_label="X Axis Label", orientation='bottom')
-        self.x_axis.stretch = (1, 0.1)
+        self.x_axis_top = AxisWidget(axis_label="X Axis Label", orientation='bottom')
+        self.x_axis_top .stretch = (1, 0.1)
 
-        self.y_axis = AxisWidget(axis_label="Y Axis Label", orientation='left')
-        self.y_axis.stretch = (0.1, 1)
+        self.y_axis_top  = AxisWidget(axis_label="Y Axis Label", orientation='left')
+        self.y_axis_top .stretch = (0.1, 1)
 
-        self.grid.add_widget(self.x_axis, row=1, col=1)
-        self.grid.add_widget(self.y_axis, row=0, col=0)
+        self.grid.add_widget(self.x_axis_top , row=1, col=1)
+        self.grid.add_widget(self.y_axis_top , row=0, col=0)
 
         self.view_top = self.grid.add_view(0, 1, bgcolor='cyan')
         self.image.parent = self.view_top.scene
 
         self.view_top.camera = "panzoom"
-        self.x_axis.link_view(self.view_top)
-        self.y_axis.link_view(self.view_top)
+        self.x_axis_top.link_view(self.view_top)
+        self.y_axis_top.link_view(self.view_top)
 
         self.view_top.camera.set_range(x=(0, IMAGE_SHAPE[1]), y=(0, IMAGE_SHAPE[0]), margin=0)
 
 
+        self.x_axis_bot = AxisWidget(axis_label="X Axis Label", orientation='bottom')
+        self.x_axis_bot.stretch = (1, 0.1)
 
+        self.y_axis_bot = AxisWidget(axis_label="Y Axis Label", orientation='left')
+        self.y_axis_bot.stretch = (0.1, 1)
 
-        self.view_bot = self.grid.add_view(1, 0, bgcolor='#c0c0c0')
+        self.grid.add_widget(self.x_axis_bot, row=3, col=1)
+        self.grid.add_widget(self.y_axis_bot, row=2, col=0)
+
+        self.view_bot = self.grid.add_view(2, 1, bgcolor='black')
 
 #---------------------------------------------------------------------------------
         self.view_bot.camera = "panzoom"
+
+        self.x_axis_bot.link_view(self.view_bot)
+        self.y_axis_bot.link_view(self.view_bot)
         self.view_bot.camera.set_range(x=(0, NUM_LINE_POINTS), y=(0, 1))
 
     def set_image_colormap(self, cmap_name: str):
@@ -177,7 +186,7 @@ class CanvasWrapper:
         self.line.set_data(color=color)
 
     def set_signal(self,signal):
-        self.line=visuals.Line(signal, parent=self.view_bot.scene, color='black')
+        self.line=visuals.Line(signal, parent=self.view_bot.scene, color='#c0c0c0')
 
 
 def _generate_random_image_data(shape, dtype=np.float32):
