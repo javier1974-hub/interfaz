@@ -5,7 +5,7 @@ import numpy as np
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import (QApplication, QMainWindow,QFileDialog)
 from PyQt6.QtGui import QAction
-from vispy.scene import SceneCanvas, visuals
+from vispy.scene import SceneCanvas, visuals, AxisWidget
 from vispy.app import use_app
 
 IMAGE_SHAPE = (600, 800)  # (height, width)
@@ -133,24 +133,38 @@ class CanvasWrapper:
         self.canvas = SceneCanvas(size=CANVAS_SIZE)
         self.grid = self.canvas.central_widget.add_grid()
 
-        self.view_top = self.grid.add_view(0, 0, bgcolor='cyan')
-
         image_data = _generate_random_image_data(IMAGE_SHAPE)
         self.image = visuals.Image(
              image_data,
              texture_format="auto",
-            cmap="viridis",
-             parent=self.view_top.scene,
+             cmap="viridis",
+             #parent=self.view_top.scene,
          )
+
+        self.x_axis = AxisWidget(axis_label="X Axis Label", orientation='bottom')
+        self.x_axis.stretch = (1, 0.1)
+
+        self.y_axis = AxisWidget(axis_label="Y Axis Label", orientation='left')
+        self.y_axis.stretch = (0.1, 1)
+
+        self.grid.add_widget(self.x_axis, row=1, col=1)
+        self.grid.add_widget(self.y_axis, row=0, col=0)
+
+        self.view_top = self.grid.add_view(0, 1, bgcolor='cyan')
+        self.image.parent = self.view_top.scene
+
         self.view_top.camera = "panzoom"
+        self.x_axis.link_view(self.view_top)
+        self.y_axis.link_view(self.view_top)
+
         self.view_top.camera.set_range(x=(0, IMAGE_SHAPE[1]), y=(0, IMAGE_SHAPE[0]), margin=0)
+
+
+
 
         self.view_bot = self.grid.add_view(1, 0, bgcolor='#c0c0c0')
 
-        #line_data = _generate_random_line_positions(NUM_LINE_POINTS)
-        # line_data = _generate_random_line_positions(NUM_LINE_POINTS)
-        # self.line = visuals.Line(line_data, parent=self.view_bot.scene, color='black')
-
+#---------------------------------------------------------------------------------
         self.view_bot.camera = "panzoom"
         self.view_bot.camera.set_range(x=(0, NUM_LINE_POINTS), y=(0, 1))
 
