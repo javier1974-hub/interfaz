@@ -81,16 +81,15 @@ class MainWindow(QMainWindow):
         """Open a text or html file and display its contents
         in the text edit field."""
         file_name, _ = QFileDialog.getOpenFileName(self, "Open File", "", "Csv Files (*.csv)")
+
         if file_name:
             pcg = np.genfromtxt(file_name, dtype=float, delimiter=',')  # abro el .csv
 
-            pos = np.empty((len(pcg), 2), dtype=np.float32)
-            pos[:, 0] = np.arange(len(pcg))
-            pos[:, 1] = pcg
+            pos_actual = np.empty((len(pcg), 2), dtype=np.float32)
+            pos_actual[:, 0] = np.arange(len(pcg))
+            pos_actual[:, 1] = pcg
 
-            self._canvas_wrapper.set_signal(pos)
-
-
+            self._canvas_wrapper.set_signal(pos_actual)
 
             print(pcg.shape)
             print(len(pcg))
@@ -133,24 +132,18 @@ class CanvasWrapper:
         self.canvas = SceneCanvas(size=CANVAS_SIZE)
         self.grid = self.canvas.central_widget.add_grid()
 
-        image_data = _generate_random_image_data(IMAGE_SHAPE)
-        self.image = visuals.Image(
-              image_data,
-              texture_format="auto",
-              cmap="viridis",
-          )
 
         self.x_axis_top = AxisWidget(axis_label="X Axis Label", orientation='bottom')
-        self.x_axis_top .stretch = (1, 0.1)
+        self.x_axis_top.stretch = (1, 0.1)
 
         self.y_axis_top  = AxisWidget(axis_label="Y Axis Label", orientation='left')
-        self.y_axis_top .stretch = (0.1, 1)
+        self.y_axis_top.stretch = (0.1, 1)
 
-        self.grid.add_widget(self.x_axis_top , row=1, col=1)
         self.grid.add_widget(self.y_axis_top , row=0, col=0)
+        self.grid.add_widget(self.x_axis_top , row=1, col=1)
 
-        self.view_top = self.grid.add_view(0, 1, bgcolor='cyan')
-        self.image.parent = self.view_top.scene
+
+        self.view_top = self.grid.add_view(0, 1, bgcolor='black')
 
         self.view_top.camera = "panzoom"
         self.x_axis_top.link_view(self.view_top)
@@ -165,8 +158,9 @@ class CanvasWrapper:
         self.y_axis_bot = AxisWidget(axis_label="Y Axis Label", orientation='left')
         self.y_axis_bot.stretch = (0.1, 1)
 
-        self.grid.add_widget(self.x_axis_bot, row=3, col=1)
         self.grid.add_widget(self.y_axis_bot, row=2, col=0)
+        self.grid.add_widget(self.x_axis_bot, row=3, col=1)
+
 
         self.view_bot = self.grid.add_view(2, 1, bgcolor='black')
 
@@ -187,6 +181,9 @@ class CanvasWrapper:
 
     def set_signal(self,signal):
         self.line=visuals.Line(signal, parent=self.view_bot.scene, color='#c0c0c0')
+
+    def clear_signal(self):
+        self.view_bot = self.grid.add_view(2, 1, bgcolor='black')
 
 
 def _generate_random_image_data(shape, dtype=np.float32):
