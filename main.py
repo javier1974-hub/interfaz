@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow,QFileDialog)
 from PyQt6.QtGui import QAction
 from vispy.scene import SceneCanvas, visuals, AxisWidget
 from vispy.app import use_app
+import vispy.plot as vp
 
 IMAGE_SHAPE = (600, 800)  # (height, width)
 CANVAS_SIZE = (800, 600)  # (width, height)
@@ -144,6 +145,7 @@ class CanvasWrapper:
 
 
         self.view_top = self.grid.add_view(0, 1, bgcolor='black')
+
 
         self.view_top.camera = "panzoom"
         self.x_axis_top.link_view(self.view_top)
