@@ -5,6 +5,17 @@ from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
 import os
+from PyQt6.QtCore import *
+from PyQt6.QtGui import *
+
+
+class MyPlotWidget(pg.PlotWidget):
+    sigMouseClicked = pyqtSignal(object) # add our custom signal
+    def __init__(self, *args, **kwargs):
+        super(MyPlotWidget, self).__init__(*args, **kwargs)
+    def mousePressEvent(self, ev):
+        super().mousePressEvent(ev)
+        self.sigMouseClicked.emit(ev)
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -22,7 +33,7 @@ class MainWindow(QWidget):
     def setUpMainWindow(self):
 
         self.pcg=[]
-        self.graphWidget = pg.PlotWidget()
+        self.graphWidget = MyPlotWidget()
 
 
         hour = [1,2,3,4,5,6,7,8,9,10]
@@ -67,15 +78,16 @@ class MainWindow(QWidget):
          self.button_File.setEnabled(True)
 
     def buttonFileClicked(self):
-         file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
-         self.pcg = np.genfromtxt(file_name,dtype =float, delimiter=',')
-         self.time = np.arange(0,len(self.pcg),1, dtype=np.float32)
+        self.graphWidget.clear()
+        file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
+        self.pcg = np.genfromtxt(file_name,dtype =float, delimiter=',')
+        self.time = np.arange(0,len(self.pcg),1, dtype=np.float32)
 
-         # Set Range
-         self.graphWidget.setXRange(0, len(self.pcg), padding=0)
-         self.graphWidget.setYRange(self.pcg.min(), self.pcg.max(), padding=0)
+        # Set Range
+        self.graphWidget.setXRange(0, len(self.pcg), padding=0)
+        self.graphWidget.setYRange(self.pcg.min(), self.pcg.max(), padding=0)
 
-         self.graphWidget.plot(self.time,self.pcg)
+        self.graphWidget.plot(self.time,self.pcg)
 
 
 if __name__ == '__main__':
