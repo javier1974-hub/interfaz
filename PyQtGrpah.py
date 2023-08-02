@@ -1,5 +1,6 @@
+import numpy as np
 from PyQt6.QtWidgets import (QApplication, QWidget, QLabel,
-QLineEdit, QCheckBox, QTextEdit, QGridLayout,QPushButton)
+QLineEdit, QCheckBox, QTextEdit, QGridLayout,QPushButton,QFileDialog)
 from pyqtgraph import PlotWidget, plot
 import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
@@ -16,7 +17,6 @@ class MainWindow(QWidget):
         self.setMinimumSize(800, 600)
         self.setWindowTitle("Interfaz Prueba")
         self.setUpMainWindow()
-        #self.loadWidgetValuesFromFile()
         self.show()
 
     def setUpMainWindow(self):
@@ -51,9 +51,9 @@ class MainWindow(QWidget):
         self.graphWidget.plot(hour, temperature)
 
 
-        self.button_Model = QPushButton("Load Model")
+        self.button_Model = QPushButton("Load Model",self)
         self.button_Model.clicked.connect(self.buttonModelClicked)
-        self.button_File = QPushButton("Load File")
+        self.button_File = QPushButton("Load File",self)
         self.button_File.clicked.connect(self.buttonFileClicked)
         self.button_File.setEnabled(False)
 
@@ -65,11 +65,15 @@ class MainWindow(QWidget):
 
         self.setLayout(self.items_grid)
 
-        def buttonMdelClicked(self):
-            pass
+    def buttonModelClicked(self):
+         file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","Torch model (*.pth) ")
+         #self.model = np.genfromtxt(file_name,dtype =float, delimiter=',')
+         self.button_File.setEnabled(True)
 
-        def buttonFileClicked(self):
-            pass
+    def buttonFileClicked(self):
+         file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
+         self.pcg = np.genfromtxt(file_name,dtype =float, delimiter=',')
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
