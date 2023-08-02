@@ -21,8 +21,7 @@ class MainWindow(QWidget):
 
     def setUpMainWindow(self):
 
-        self.pizza_label = QLabel("Pizza Type: ")
-
+        self.pcg=[]
         self.graphWidget = pg.PlotWidget()
 
 
@@ -42,20 +41,17 @@ class MainWindow(QWidget):
         self.graphWidget.addLegend()
         #Add grid
         self.graphWidget.showGrid(x=True, y=True)
-        #Set Range
-        self.graphWidget.setXRange(0, 10, padding=0)
-        self.graphWidget.setYRange(20, 55, padding=0)
 
-        pen = pg.mkPen(color=(255, 0, 0))
         #self.graphWidget.plot(hour, temperature, name="Sensor 1",  pen=pen, symbol='+', symbolSize=30, symbolBrush=('b'))
-        self.graphWidget.plot(hour, temperature)
+        #self.graphWidget.plot(hour, temperature)
+        #self.graphWidget.plot(self.pcg)
 
 
         self.button_Model = QPushButton("Load Model",self)
         self.button_Model.clicked.connect(self.buttonModelClicked)
         self.button_File = QPushButton("Load File",self)
         self.button_File.clicked.connect(self.buttonFileClicked)
-        self.button_File.setEnabled(False)
+        self.button_File.setEnabled(True)
 
 
         self.items_grid = QGridLayout()
@@ -73,6 +69,13 @@ class MainWindow(QWidget):
     def buttonFileClicked(self):
          file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
          self.pcg = np.genfromtxt(file_name,dtype =float, delimiter=',')
+         self.time = np.arange(0,len(self.pcg),1, dtype=np.float32)
+
+         # Set Range
+         self.graphWidget.setXRange(0, len(self.pcg), padding=0)
+         self.graphWidget.setYRange(self.pcg.min(), self.pcg.max(), padding=0)
+
+         self.graphWidget.plot(self.time,self.pcg)
 
 
 if __name__ == '__main__':
