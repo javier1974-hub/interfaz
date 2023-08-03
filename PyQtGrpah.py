@@ -10,12 +10,28 @@ from PyQt6.QtGui import *
 
 
 class MyPlotWidget(pg.PlotWidget):
+
     sigMouseClicked = pyqtSignal(object) # add our custom signal
+
     def __init__(self, *args, **kwargs):
         super(MyPlotWidget, self).__init__(*args, **kwargs)
+
     def mousePressEvent(self, ev):
         super().mousePressEvent(ev)
         self.sigMouseClicked.emit(ev)
+
+
+
+    # def __init__(self, **kwargs):
+    #     super().__init__(**kwargs)
+    #
+    #     # self.scene() is a pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene
+    #     self.scene().sigMouseClicked.connect(self.mouse_clicked)
+    #
+    #
+    # def mouse_clicked(self, mouseClickEvent):
+    #     # mouseClickEvent is a pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+    #     print('clicked plot 0x{:x}, event: {}'.format(id(self), mouseClickEvent))
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -53,10 +69,15 @@ class MainWindow(QWidget):
         #Add grid
         self.graphWidget.showGrid(x=True, y=True)
 
+        #self.graphWidget.sigMouseClicked.connect(self.plot_clicked)
+
         #self.graphWidget.plot(hour, temperature, name="Sensor 1",  pen=pen, symbol='+', symbolSize=30, symbolBrush=('b'))
         #self.graphWidget.plot(hour, temperature)
         #self.graphWidget.plot(self.pcg)
 
+
+
+        self.coord_x = QLabel("",self)
 
         self.button_Model = QPushButton("Load Model",self)
         self.button_Model.clicked.connect(self.buttonModelClicked)
@@ -69,8 +90,25 @@ class MainWindow(QWidget):
         self.items_grid.addWidget(self.graphWidget , 0, 1, 5,1)
         self.items_grid.addWidget(self.button_Model, 0, 0, 1,1)
         self.items_grid.addWidget(self.button_File , 1, 0, 1,1)
+        self.items_grid.addWidget(self.coord_x, 2, 0, 1, 1)
 
         self.setLayout(self.items_grid)
+
+    def plot_clicked(self):
+        print("clicked!")
+        self.coord_x.setText('zaraza')
+        print(self.mousePoint.x())
+
+    def onMouseMoved(self, evt):
+        if self.graphWidget.plotItem.vb.mapSceneToView(evt):
+            point = self.graphWidget.plotItem.vb.mapSceneToView(evt)
+            self.label.setHtml(
+                "<p style='color:white'>X： {0} <br> Y: {1}</p>". \
+                    format(point.x(), point.y()))
+
+    def mouse_clicked(self, mouseClickEvent):
+        # mouseClickEvent is a pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
+        print('clicked plot 0x{:x}, event: {}'.format(id(self), mouseClickEvent))
 
     def buttonModelClicked(self):
          file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","Torch model (*.pth) ")
@@ -88,6 +126,13 @@ class MainWindow(QWidget):
         self.graphWidget.setYRange(self.pcg.min(), self.pcg.max(), padding=0)
 
         self.graphWidget.plot(self.time,self.pcg)
+
+        self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
+        self.graphWidget.addItem(self.label)
+
+        self.setMouseTracking(True)
+        self.graphWidget.scene().sigMouseMoved.connect(self.onMouseMoved)
+        self.graphWidget.scene().sigMouseClicked.connect(self.mouse_clicked)
 
 
 if __name__ == '__main__':
