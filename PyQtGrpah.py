@@ -191,38 +191,30 @@ class MainWindow(QWidget):
 
         self.pcg=[]
         self.preds = []
-        #self.graphItem = pg.GraphItem()
-        #self.label = pg.LabelItem(justify='right')
-        self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
-        self.graphWidget = PlotWidget()
-        self.vb = self.graphWidget.plotItem.vb
-        # self.vLine = pg.InfiniteLine(angle=90, movable=False)
-        # self.hLine = pg.InfiniteLine(angle=0, movable=False)
+        self.win = pg.GraphicsLayoutWidget(show=True)
+        self.win.setWindowTitle('Segmentacion de PCG')
+        self.label = pg.LabelItem(justify='right')
+        self.win.addItem(self.label)
+        self.p1 =self.win.addPlot(row=1, col=0)
+        # customize the averaged curve that can be activated from the context menu:
+        self.p1.avgPen = pg.mkPen('#FFFFFF')
+        self.p1.avgShadowPen = pg.mkPen('#8080DD', width=10)
+
+        self.p2 = self.win.addPlot(row=2, col=0)
+
+        self.region = pg.LinearRegionItem()
+        self.region.setZValue(10)
+        # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this
+        # item when doing auto-range calculations.
+        self.p2.addItem(self.region, ignoreBounds=True)
+
+        self.p1.setAutoVisible(y=True)
+
+
         self.model = UNET(1, 64, 3)
 
 
-        hour = [1,2,3,4,5,6,7,8,9,10]
-        temperature = [30,32,34,32,33,31,29,32,35,45]
-
-        #Add Background colour to white
-        self.graphWidget.setBackground('k')
-        # Add Title
-        self.graphWidget.setTitle("Señal", color="w", size="30pt")
-        # Add Axis Labels
-        styles = {"color": "#fff", "font-size": "20px"}
-        self.graphWidget.setLabel("left", "Amp", **styles)
-        self.graphWidget.setLabel("bottom", "muestras", **styles)
-
-        #Add legend
-        self.graphWidget.addLegend()
-        #Add grid
-        self.graphWidget.showGrid(x=True, y=True)
-
-        #self.graphWidget.sigMouseClicked.connect(self.plot_clicked)
-        #self.graphWidget.scene().sigMouseMoved.connect(self.onMouseMoved)
-
-
-        self.coord_x = QLabel("",self)
+        self.coord = QLabel("",self)
 
         self.button_Model = QPushButton("Load Model",self)
         self.button_Model.clicked.connect(self.buttonModelClicked)
@@ -234,15 +226,12 @@ class MainWindow(QWidget):
         self.button_Segment.setEnabled(False)
 
 
-        # self.graphWidget.addItem(self.vLine, ignoreBounds=True)
-        # self.graphWidget.addItem(self.hLine, ignoreBounds=True)
-
         self.items_grid = QGridLayout()
-        self.items_grid.addWidget(self.graphWidget , 0, 1, 5,1)
+        self.items_grid.addWidget(self.win , 0, 1, 5,1)
         self.items_grid.addWidget(self.button_Model, 0, 0, 1,1)
         self.items_grid.addWidget(self.button_File , 1, 0, 1,1)
-        self.items_grid.addWidget(self.coord_x, 2, 0, 1, 1)
         self.items_grid.addWidget(self.button_Segment, 2, 0, 1, 1)
+        self.items_grid.addWidget(self.coord, 3, 0, 1, 1)
 
         self.setLayout(self.items_grid)
 
@@ -251,21 +240,37 @@ class MainWindow(QWidget):
         self.coord_x.setText('zaraza')
         print(self.mousePoint.x())
 
-    def onMouseMoved(self, evt):
+    def mouseMoved(self, evt):
         pos = evt
-        if self.graphWidget.sceneBoundingRect().contains(pos):
+        if self.p1.sceneBoundingRect().contains(pos):
             mousePoint = self.vb.mapSceneToView(pos)
             index = int(mousePoint.x())
             if index > 0 and index < len(self.pcg):
                 self.label.setText("x=%0.1f, y=%0.1f" % (mousePoint.x(), self.pcg[index]))
             self.vLine.setPos(mousePoint.x())
             self.hLine.setPos(mousePoint.y())
+    def mouseClicked(self, evt):
+        pos = evt
+        if self.p1.sceneBoundingRect().contains(pos):
+            mousePoint = self.vb.mapSceneToView(pos)
+            index = int(mousePoint.x())
+            if index > 0 and index < len(self.pcg):
+                self.coord.setText("x=%0.1f, y=%0.1f" % (mousePoint.x(), self.pcg[index]))
+            #self.vLine.setPos(mousePoint.x())
+            #self.hLine.setPos(mousePoint.y())
+    def update(self):
+        self.region.setZValue(10)
+        minX, maxX = self.region.getRegion()
+        self.p1.setXRange(minX, maxX, padding=0)
 
-    def mouse_clicked(self, mouseClickEvent):
-        # mouseClickEvent is a pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
-        print('clicked plot 0x{:x}, event: {}'.format(id(self), mouseClickEvent))
 
-    def buttonModelClicked(self):
+    def updateRegion(self,window, viewRange):
+        rgn = viewRange[0]
+        self.region.setRegion(rgn)
+
+
+    def buttonModelClicked(self, evt):
+
          model_path, ok = QFileDialog.getOpenFileName(self,"Open File", "","Torch model (*.pth) ")
 
          # Cargo el modelo previamente guardado
@@ -278,31 +283,34 @@ class MainWindow(QWidget):
 
     def buttonFileClicked(self):
 
-        self.graphWidget.clear()
+        #self.win.clear()
         self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
         self.pcg = np.genfromtxt(self.file_name,dtype =float, delimiter=',')
         self.time = np.arange(0,len(self.pcg),1, dtype=np.float32)
 
-        # Set Range
-        self.graphWidget.setXRange(0, len(self.pcg), padding=0)
-        self.graphWidget.setYRange(self.pcg.min(), self.pcg.max(), padding=0)
 
-        self.graphWidget.plot(self.time,self.pcg)
+        self.p1.plot(self.pcg, pen="r")
+        #self.p1.plot(data2, pen="g")
 
-        #self.label = pg.LabelItem(justify='right')
-        self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
+        p2d = self.p2.plot(self.pcg, pen="w")
+        # bound the LinearRegionItem to the plotted data
+        self.region.setClipItem(p2d)
 
-        self.graphWidget.addItem(self.label)
-        self.graphWidget.scene().sigMouseMoved.connect(self.onMouseMoved)
+        self.region.sigRegionChanged.connect(self.update)
+        self.p1.sigRangeChanged.connect(self.updateRegion)
+
+        #self.region.setRegion([1000, 2000])
+
+        # cross hair
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
-        self.graphWidget.addItem(self.vLine, ignoreBounds=True)
-        self.graphWidget.addItem(self.hLine, ignoreBounds=True)
+        self.p1.addItem(self.vLine, ignoreBounds=True)
+        self.p1.addItem(self.hLine, ignoreBounds=True)
 
+        self.vb = self.p1.vb
+        self.p1.scene().sigMouseMoved.connect(self.mouseMoved)
+        #self.p1.scene().sigMouseClicked.connect(self.mouseClicked)
 
-        #self.setMouseTracking(True)
-        #self.graphWidget.scene().sigMouseMoved.connect(self.onMouseMoved)
-        #self.graphWidget.scene().sigMouseClicked.connect(self.mouse_clicked)
 
         self.button_Segment.setEnabled(True)
 
@@ -326,49 +334,25 @@ class MainWindow(QWidget):
 
         self.pcg = self.pcg.squeeze(1).cpu().numpy()
 
-        #print(np.transpose(self.pcg).shape)
-        #print(np.squeeze(np.transpose(self.pcg)).shape)
         self.pcg = np.transpose(self.pcg)
         self.pcg = np.squeeze(self.pcg)
 
         self.preds = self.preds.cpu().numpy()
-        #plot_salida(pcg, preds)
         self.preds = np.transpose(self.preds)
         self.preds = np.squeeze(self.preds)
 
-        self.graphWidget.clear()
+        #self.graphWidget.clear()
         self.time = np.arange(0, len(self.pcg), 1, dtype=np.float32)
 
-        # Set Range
-        self.graphWidget.setXRange(0, len(self.pcg), padding=0)
-        self.graphWidget.setYRange(self.preds.min(), self.preds.max(), padding=0)
-        #print(self.pcg)
-        cm = pg.ColorMap([0.0,0.5,1.0],  ['r','g','b'], mapping='REPEAT')
-        pen = cm.getPen(span=[0, 2.0], orientation= 'vertical', width=1)
-
-        points = np.array([self.time, self.preds], dtype=object).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        print(segments.shape)
 
 
-
-        #cm1 = pg.ColorMap([0.0, 0.5, 1.0], ['r', 'b','g'])
-        #pen1 = cm.getPen(span=(0.0, 1024), orientation= 'horizontal',width=5)
-        #self.graphWidget.plot(100 * np.sin(2 * np.pi * 1.0 * np.linspace(0, 1, 1000)), pen=pen1)
-
-        #self.label = pg.LabelItem(justify='right')
-        self.graphWidget.addItem(self.label)
-        self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
-        self.graphWidget.scene().sigMouseMoved.connect(self.onMouseMoved)
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
-        self.graphWidget.addItem(self.vLine, ignoreBounds=True)
-        self.graphWidget.addItem(self.hLine, ignoreBounds=True)
+        self.p1.addItem(self.vLine, ignoreBounds=True)
+        self.p1.addItem(self.hLine, ignoreBounds=True)
 
-        self.graphWidget.plot(self.time, self.pcg)
-        self.graphWidget.plot(self.time, self.preds,pen=pen)
-
-
+        #self.p1.plot(self.time, self.pcg)
+        self.p1.plot(self.time, self.preds)
 
 
 
