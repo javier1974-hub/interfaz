@@ -192,7 +192,8 @@ class MainWindow(QWidget):
         self.pcg=[]
         self.preds = []
         #self.graphItem = pg.GraphItem()
-        self.label = pg.LabelItem(justify='right')
+        #self.label = pg.LabelItem(justify='right')
+        self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
         self.graphWidget = PlotWidget()
         self.vb = self.graphWidget.plotItem.vb
         # self.vLine = pg.InfiniteLine(angle=90, movable=False)
@@ -256,7 +257,7 @@ class MainWindow(QWidget):
             mousePoint = self.vb.mapSceneToView(pos)
             index = int(mousePoint.x())
             if index > 0 and index < len(self.pcg):
-                self.label.setText("<span style='font-size: 12pt'>x=%0.1f,   <span style='color: red'>y1=%0.1f</span>" % (mousePoint.x(), self.pcg[index]))
+                self.label.setText("x=%0.1f, y=%0.1f" % (mousePoint.x(), self.pcg[index]))
             self.vLine.setPos(mousePoint.x())
             self.hLine.setPos(mousePoint.y())
 
@@ -288,8 +289,8 @@ class MainWindow(QWidget):
 
         self.graphWidget.plot(self.time,self.pcg)
 
-        self.label = pg.LabelItem(justify='right')
-        #self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
+        #self.label = pg.LabelItem(justify='right')
+        self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
 
         self.graphWidget.addItem(self.label)
         self.graphWidget.scene().sigMouseMoved.connect(self.onMouseMoved)
@@ -355,8 +356,9 @@ class MainWindow(QWidget):
         #pen1 = cm.getPen(span=(0.0, 1024), orientation= 'horizontal',width=5)
         #self.graphWidget.plot(100 * np.sin(2 * np.pi * 1.0 * np.linspace(0, 1, 1000)), pen=pen1)
 
-        self.label = pg.LabelItem(justify='right')
+        #self.label = pg.LabelItem(justify='right')
         self.graphWidget.addItem(self.label)
+        self.label = pg.TextItem(text="X: {} \nY: {}".format(0, 0))
         self.graphWidget.scene().sigMouseMoved.connect(self.onMouseMoved)
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
         self.hLine = pg.InfiniteLine(angle=0, movable=False)
