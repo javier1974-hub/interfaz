@@ -256,12 +256,15 @@ class MainWindow(QWidget):
             index = int(mousePoint.x())
             if index > 0 and index < len(self.pcg):
                 self.coord.setText("x=%0.1f, y=%0.1f" % (mousePoint.x(), self.pcg[index]))
-            #self.vLine.setPos(mousePoint.x())
-            #self.hLine.setPos(mousePoint.y())
+            self.vLine.setPos(mousePoint.x())
+            self.hLine.setPos(mousePoint.y())
+
     def update(self):
         self.region.setZValue(10)
         minX, maxX = self.region.getRegion()
         self.p1.setXRange(minX, maxX, padding=0)
+        self.coord.setText("Intervalo = %0.1f" % (maxX - minX))
+
 
 
     def updateRegion(self,window, viewRange):
@@ -299,7 +302,7 @@ class MainWindow(QWidget):
         self.region.sigRegionChanged.connect(self.update)
         self.p1.sigRangeChanged.connect(self.updateRegion)
 
-        #self.region.setRegion([1000, 2000])
+        self.region.setRegion([0, 1024])
 
         # cross hair
         self.vLine = pg.InfiniteLine(angle=90, movable=False)
@@ -309,7 +312,7 @@ class MainWindow(QWidget):
 
         self.vb = self.p1.vb
         self.p1.scene().sigMouseMoved.connect(self.mouseMoved)
-        #self.p1.scene().sigMouseClicked.connect(self.mouseClicked)
+        #self.p1.scene().sigMouseMoved.connect(self.mouseClicked)
 
 
         self.button_Segment.setEnabled(True)
