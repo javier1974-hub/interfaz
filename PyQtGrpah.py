@@ -195,6 +195,17 @@ class MainWindow(QWidget):
         self.win.setWindowTitle('Segmentacion de PCG')
         self.label = pg.LabelItem(justify='right')
         self.win.addItem(self.label)
+
+        # self.v2a = self.win.addViewBox(row=1, col=0, lockAspect=True)
+        # self.r2a = pg.PolyLineROI([[0, 0], [10, 10], [10, 30], [30, 10]], closed=True)
+        # self.v2a.addItem(self.r2a)
+        # self.r2b = pg.PolyLineROI([[0, -20], [10, -10], [10, -30]], closed=False)
+        # self.v2a.addItem(self.r2b)
+        # self.v2a.disableAutoRange('xy')
+        # self.v2a.autoRange()
+
+
+
         self.p1 =self.win.addPlot(row=1, col=0)
         # customize the averaged curve that can be activated from the context menu:
         self.p1.avgPen = pg.mkPen('#FFFFFF')
@@ -206,8 +217,10 @@ class MainWindow(QWidget):
         self.region.setZValue(10)
         # Add the LinearRegionItem to the ViewBox, but tell the ViewBox to exclude this
         # item when doing auto-range calculations.
-        self.p2.addItem(self.region, ignoreBounds=True)
 
+
+
+        self.p2.addItem(self.region, ignoreBounds=True)
         self.p1.setAutoVisible(y=True)
 
 
@@ -249,15 +262,8 @@ class MainWindow(QWidget):
                 self.label.setText("x=%0.1f, y=%0.1f" % (mousePoint.x(), self.pcg[index]))
             self.vLine.setPos(mousePoint.x())
             self.hLine.setPos(mousePoint.y())
-    def mouseClicked(self, evt):
-        pos = evt
-        if self.p1.sceneBoundingRect().contains(pos):
-            mousePoint = self.vb.mapSceneToView(pos)
-            index = int(mousePoint.x())
-            if index > 0 and index < len(self.pcg):
-                self.coord.setText("x=%0.1f, y=%0.1f" % (mousePoint.x(), self.pcg[index]))
-            self.vLine.setPos(mousePoint.x())
-            self.hLine.setPos(mousePoint.y())
+    def mouseClicked(self):
+        pass
 
     def update(self):
         self.region.setZValue(10)
@@ -355,7 +361,34 @@ class MainWindow(QWidget):
         self.p1.addItem(self.hLine, ignoreBounds=True)
 
         #self.p1.plot(self.time, self.pcg)
+
+
         self.p1.plot(self.time, self.preds)
+
+        x1 = np.where(self.preds == 0)
+        x2 = np.where(self.preds == 1)
+        x3 = np.where(self.preds == 2)
+
+
+        # self.v2a = self.win.addViewBox(row=1, col=0, lockAspect=True)
+        # self.r2a = pg.PolyLineROI([[x2[0].min(), 0], [x2[0].max(), 10], [10, 30], [30, 10]], closed=True)
+        # self.v2a.addItem(self.r2a)
+        # self.r2b = pg.PolyLineROI([[0, -20], [10, -10], [10, -30]], closed=False)
+        # self.v2a.addItem(self.r2b)
+        # self.v2a.disableAutoRange('xy')
+        # self.v2a.autoRange()
+
+
+        print("primer uno")
+        print(np.shape(x1))
+        print(x1[0].min())
+        print(x1[0].max())
+        print(x2[0].min())
+        print(x2[0].max())
+        print(x3[0].min())
+        print(x3[0].max())
+
+
 
 
 
