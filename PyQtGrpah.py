@@ -162,18 +162,6 @@ class MyPlotWidget(pg.PlotWidget):
         self.sigMouseClicked.emit(ev)
 
 
-
-    # def __init__(self, **kwargs):
-    #     super().__init__(**kwargs)
-    #
-    #     # self.scene() is a pyqtgraph.GraphicsScene.GraphicsScene.GraphicsScene
-    #     self.scene().sigMouseClicked.connect(self.mouse_clicked)
-    #
-    #
-    # def mouse_clicked(self, mouseClickEvent):
-    #     # mouseClickEvent is a pyqtgraph.GraphicsScene.mouseEvents.MouseClickEvent
-    #     print('clicked plot 0x{:x}, event: {}'.format(id(self), mouseClickEvent))
-
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -227,7 +215,8 @@ class MainWindow(QWidget):
         self.model = UNET(1, 64, 3)
 
 
-        self.coord = QLabel("",self)
+        self.intervalo = QLabel("",self)
+        self.coord = QLabel("", self)
 
         self.button_Model = QPushButton("Load Model",self)
         self.button_Model.clicked.connect(self.buttonModelClicked)
@@ -244,13 +233,14 @@ class MainWindow(QWidget):
         self.items_grid.addWidget(self.button_Model, 0, 0, 1,1)
         self.items_grid.addWidget(self.button_File , 1, 0, 1,1)
         self.items_grid.addWidget(self.button_Segment, 2, 0, 1, 1)
-        self.items_grid.addWidget(self.coord, 3, 0, 1, 1)
+        self.items_grid.addWidget(self.intervalo, 3, 0, 1, 1)
+        self.items_grid.addWidget(self.coord, 4, 0, 1, 1)
 
         self.setLayout(self.items_grid)
 
     def plot_clicked(self):
         print("clicked!")
-        self.coord_x.setText('zaraza')
+        self.intervalo_x.setText('zaraza')
         print(self.mousePoint.x())
 
     def mouseMoved(self, evt):
@@ -259,17 +249,32 @@ class MainWindow(QWidget):
             mousePoint = self.vb.mapSceneToView(pos)
             index = int(mousePoint.x())
             if index > 0 and index < len(self.pcg):
-                self.label.setText("x=%0.1f, y=%0.1f" % (mousePoint.x(), self.pcg[index]))
+                self.label.setText("x=%0.2f, y=%0.2f" % (mousePoint.x(), self.pcg[index]))
             self.vLine.setPos(mousePoint.x())
             self.hLine.setPos(mousePoint.y())
-    def mouseClicked(self):
-        pass
+    def mouseClicked(self,evt):
+        #self.region.setZValue(10)
+        #minX, maxX = self.region.getRegion()
+        #self.p1.setXRange(minX, maxX, padding=0)
+
+        items = self.p1.scene().items(evt.scenePos())
+        mousePoint = self.vb.mapSceneToView(evt._scenePos)
+        if self.p1.sceneBoundingRect().contains(evt._scenePos):
+            mousePoint = self.vb.mapSceneToView(evt._scenePos)
+            index = int(mousePoint.x())
+            print(int(mousePoint.x()), mousePoint.y())
+            self.coord.setText("x=%0.1f, y=%0.2f" % (mousePoint.x(), self.pcg[index]))
+            if index > 0 and index < len(self.pcg):
+                self.label.setText("x=%0.1f, y=%0.2f" % (mousePoint.x(), self.pcg[index]))
+        #pass
 
     def update(self):
         self.region.setZValue(10)
         minX, maxX = self.region.getRegion()
         self.p1.setXRange(minX, maxX, padding=0)
-        self.coord.setText("Intervalo = %0.1f" % (maxX - minX))
+        self.intervalo.setText("Intervalo = %0.1f" % (maxX - minX))
+        #self.coord.setText("x=%0.1f, y=%0.2f" % (mousePoint.x(), self.pcg[index]))
+
 
 
 
@@ -318,7 +323,7 @@ class MainWindow(QWidget):
 
         self.vb = self.p1.vb
         self.p1.scene().sigMouseMoved.connect(self.mouseMoved)
-        #self.p1.scene().sigMouseMoved.connect(self.mouseClicked)
+        self.p1.scene().sigMouseClicked.connect(self.mouseClicked)
 
 
         self.button_Segment.setEnabled(True)
@@ -361,9 +366,11 @@ class MainWindow(QWidget):
         self.p1.addItem(self.hLine, ignoreBounds=True)
 
         #self.p1.plot(self.time, self.pcg)
+        cm = pg.ColorMap([0.0,0.5, 1.0], ['r', 'b','g'])
+        pen = cm.getPen(span=(0.95, 1.05), width=1, orientation='vertical')
 
-
-        self.p1.plot(self.time, self.preds)
+        self.p1.plot(self.time, self.preds,pen=pen)
+        #self.p1.plot(self.time, self.pcg, pen=pen)
 
         x1 = np.where(self.preds == 0)
         x2 = np.where(self.preds == 1)
