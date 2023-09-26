@@ -1,9 +1,11 @@
 import numpy as np
 from PyQt6.QtWidgets import (QApplication, QWidget, QLabel,
-QLineEdit, QCheckBox, QTextEdit, QGridLayout,QPushButton,QFileDialog, QTableWidget, QTableWidgetItem,)
+QLineEdit, QCheckBox, QTextEdit, QGridLayout,QPushButton,QFileDialog, QTableWidget, QTableWidgetItem,QProgressBar)
 from pyqtgraph import PlotWidget, plot
+from PyQt6.QtCore import pyqtSignal, QThread
 import pyqtgraph as pg
 import sys  # We need sys so that we can pass argv to QApplication
+from time import sleep
 import os
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
@@ -13,16 +15,26 @@ import random
 from UNET import *
 
 
-# class MyPlotWidget(pg.PlotWidget):
-#
-#     sigMouseClicked = pyqtSignal(object) # add our custom signal
-#
-#     def __init__(self, *args, **kwargs):
-#         super(MyPlotWidget, self).__init__(*args, **kwargs)
-#
-#     def mousePressEvent(self, ev):
-#         super().mousePressEvent(ev)
-#         self.sigMouseClicked.emit(ev)
+# Create worker thread for running tasks like updating
+# the progress bar, renaming photos, displaying information
+# in the text edit widget.
+class Worker(QThread):
+    finished = pyqtSignal()
+    progress = pyqtSignal(int)
+    def __init__(self, filename):
+        super().__init__()
+        self.filename = filename
+
+    def run(self):
+        """Long-running task."""
+        for i in range(10):
+            sleep(0.01)
+            self.progress.emit(i + 1)
+            self.pcg = np.genfromtxt(self.filename, dtype=float, delimiter=',')
+            self.time = np.arange(0, len(self.pcg), 1, dtype=np.float32)
+
+            print(self.pcg)
+        self.finished.emit()
 
 
 class MainWindow(QWidget):
@@ -80,10 +92,15 @@ class MainWindow(QWidget):
         self.button_Model.clicked.connect(self.buttonModelClicked)
         self.button_File = QPushButton("Load File",self)
         self.button_File.clicked.connect(self.buttonFileClicked)
+        3#self.button_File.clicked.connect(self.fileLoad())
         self.button_File.setEnabled(False)
         self.button_Segment = QPushButton("Segment",self)
         self.button_Segment.clicked.connect(self.buttonSegmentClicked)
         self.button_Segment.setEnabled(False)
+
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(0)
+
 
         #self.table = QTableWidget(4,2)
 
@@ -94,7 +111,8 @@ class MainWindow(QWidget):
         self.items_grid.addWidget(self.button_Segment, 2, 0, 1, 1)
         self.items_grid.addWidget(self.intervalo, 3, 0, 1, 1)
         self.items_grid.addWidget(self.coord, 4, 0, 1, 1)
-        #self.items_grid.addWidget(self.table, 1, 5, 3, 1)
+        self.items_grid.addWidget(self.progress_bar, 5, 1, 1, 3)
+
 
         self.setLayout(self.items_grid)
 
@@ -138,12 +156,12 @@ class MainWindow(QWidget):
         #self.coord.setText("x=%0.1f, y=%0.2f" % (mousePoint.x(), self.pcg[index]))
 
 
-
-
     def updateRegion(self,window, viewRange):
         rgn = viewRange[0]
         self.region.setRegion(rgn)
 
+    def updateProgressBar(self, value):
+        self.progress_bar.setValue(value)
 
     def buttonModelClicked(self, evt):
 
@@ -157,13 +175,47 @@ class MainWindow(QWidget):
 
          self.button_File.setEnabled(True)
 
+    #def fileLoad(self, filename):
+        #self.thread = QThread()
+        # Step 3: Create a worker object
+        #self.worker = Worker(self.filename)
+        #self.worker.start()
+        # Step 4: Move worker to the thread
+        #self.worker.moveToThread(self.thread)
+        # Step 5: Connect signals and slots
+        #self.thread.started.connect(self.worker.run)
+        #self.worker.finished.connect(self.thread.quit)
+        #self.worker.finished.connect(self.worker.deleteLater)
+        #self.thread.finished.connect(self.thread.deleteLater)
+        #self.worker.progress.connect(self.updateProgressBar)
+
+        #self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
+        #self.pcg = np.genfromtxt(self.file_name,dtype =float, delimiter=',')
+        #self.time = np.arange(0,len(self.pcg),1, dtype=np.float32)
+        # Step 6: Start the thread
+        #self.thread.start()
+
+        #self.worker.finished.connect(self.graficar)
+
+
     def buttonFileClicked(self):
 
-        #self.win.clear()
+        #self.pcg = self.fileLoad(self.pcg, self.filename)
         self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
-        self.pcg = np.genfromtxt(self.file_name,dtype =float, delimiter=',')
-        self.time = np.arange(0,len(self.pcg),1, dtype=np.float32)
+        self.worker = Worker(self.file_name)
 
+        self.worker.progress.connect(self.updateProgressBar)
+        self.worker.start()
+
+        print("antes de finished")
+        self.worker.finished.connect(self.graficar)
+        print("despues de finished")
+        #pass
+
+
+    def graficar(self):
+
+        self.time = np.arange(0, len(self.pcg), 1, dtype=np.float32)
 
         self.p1.plot(self.pcg, pen="r",symbol='o',symbolSize=5 ,symbolBrush="r")
         self.p1.showGrid(x=True, y=True, alpha=0.3)
