@@ -13,6 +13,7 @@ import numpy as np
 import os
 import random
 from UNET import *
+from itertools import islice
 
 
 # Create worker thread for running tasks like updating
@@ -21,20 +22,25 @@ from UNET import *
 class Worker(QThread):
     finished = pyqtSignal()
     progress = pyqtSignal(int)
-    def __init__(self, filename):
+    def __init__(self, filename,data):
         super().__init__()
         self.filename = filename
+        self.data = data
 
     def run(self):
         """Long-running task."""
-        for i in range(10):
-            sleep(0.01)
-            self.progress.emit(i + 1)
-            self.pcg = np.genfromtxt(self.filename, dtype=float, delimiter=',')
-            self.time = np.arange(0, len(self.pcg), 1, dtype=np.float32)
+        chunksize = 1000
+        info = QFileInfo(self.filename)
+        filesize = info.size()
+        print(filesize)
+        N = int(filesize/chunksize) + 1
+        with open(self.filename, 'rb') as f:
+            for i in range(N):
+                self.data += map(self.convert, f.read(chunksize))
+                self.progress.emit(i)
+                print(self.data)
+            self.finished.emit()
 
-            print(self.pcg)
-        self.finished.emit()
 
 
 class MainWindow(QWidget):
@@ -167,7 +173,6 @@ class MainWindow(QWidget):
 
          model_path, ok = QFileDialog.getOpenFileName(self,"Open File", "","Torch model (*.pth) ")
 
-         # Cargo el modelo previamente guardado
 
          #modelo = UNET(1, 64, 3)
          self.model.load_state_dict(torch.load(model_path))
@@ -175,41 +180,25 @@ class MainWindow(QWidget):
 
          self.button_File.setEnabled(True)
 
-    #def fileLoad(self, filename):
-        #self.thread = QThread()
-        # Step 3: Create a worker object
-        #self.worker = Worker(self.filename)
-        #self.worker.start()
-        # Step 4: Move worker to the thread
-        #self.worker.moveToThread(self.thread)
-        # Step 5: Connect signals and slots
-        #self.thread.started.connect(self.worker.run)
-        #self.worker.finished.connect(self.thread.quit)
-        #self.worker.finished.connect(self.worker.deleteLater)
-        #self.thread.finished.connect(self.thread.deleteLater)
-        #self.worker.progress.connect(self.updateProgressBar)
-
-        #self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
-        #self.pcg = np.genfromtxt(self.file_name,dtype =float, delimiter=',')
-        #self.time = np.arange(0,len(self.pcg),1, dtype=np.float32)
-        # Step 6: Start the thread
-        #self.thread.start()
-
-        #self.worker.finished.connect(self.graficar)
-
 
     def buttonFileClicked(self):
 
         #self.pcg = self.fileLoad(self.pcg, self.filename)
         self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
-        self.worker = Worker(self.file_name)
+
+        #info = QFileInfo(self.file_name)
+        #size = info.size()
+        #print(size)
+
+        #file = QtFileLoader(self.file_name)
+        self.worker = Worker(self.file_name, self.pcg)
 
         self.worker.progress.connect(self.updateProgressBar)
         self.worker.start()
 
-        print("antes de finished")
+        #print("antes de finished")
         self.worker.finished.connect(self.graficar)
-        print("despues de finished")
+        #print("despues de finished")
         #pass
 
 
