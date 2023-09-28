@@ -48,21 +48,12 @@ class Worker(QThread):
 
             self.progress.emit(int((((i+1)*100)/N)))
 
+        # considero las lineas finales (cantidad menor al chunk)
+        data = np.loadtxt(self.filename, dtype=float, delimiter=',', skiprows=N * chunksize, max_rows=total_line- N*chunksize,usecols=0)
+        data1.append(data.tolist())
 
         self.data = list(itertools.chain.from_iterable(data1))
         self.finished.emit(self.data)
-
-        # N=int(filesize/chunksize)
-        # with open(self.filename, 'rb') as f:
-        #     for i in range(N):
-        #         self.data+= f.read(chunksize)
-        #
-        #         self.progress.emit(i)
-        #         print(self.data)
-        #         #print(type(self.data))
-        #         #print(type(self.data[0]))
-        #     self.finished.emit()
-
 
 
 class MainWindow(QWidget):
