@@ -13,7 +13,7 @@ import numpy as np
 import os
 import random
 from UNET import *
-from itertools import islice
+import itertools
 
 
 # Create worker thread for running tasks like updating
@@ -29,17 +29,36 @@ class Worker(QThread):
 
     def run(self):
         """Long-running task."""
-        chunksize = 1000
+        i = 0
+        data1=[]
+        chunksize = 100
         info = QFileInfo(self.filename)
         filesize = info.size()
         print(filesize)
-        N = int(filesize/chunksize) + 1
-        with open(self.filename, 'rb') as f:
-            for i in range(N):
-                self.data += map(self.convert, f.read(chunksize))
-                self.progress.emit(i)
-                print(self.data)
-            self.finished.emit()
+
+
+        N = int(1024/chunksize)
+        for i in range(N):
+            data =  np.loadtxt(self.filename, dtype=float, delimiter=',', skiprows = i*chunksize, max_rows = chunksize, usecols=0)
+            data1.append(data.tolist())
+
+            self.progress.emit(i)
+
+            print(i*chunksize)
+            print(self.data)
+
+        self.data = list(itertools.chain.from_iterable(data1))
+        self.finished.emit()
+
+        # with open(self.filename, 'rb') as f:
+        #     for i in range(N):
+        #         data_int += f.read(chunksize)
+        #
+        #         self.progress.emit(i)
+        #         print(self.data)
+        #         #print(type(self.data))
+        #         #print(type(self.data[0]))
+        #     self.finished.emit()
 
 
 
