@@ -33,20 +33,21 @@ class Worker(QThread):
         data1=[]
         data_int=[]
         chunksize = 100
-        info = QFileInfo(self.filename)
-        filesize = info.size()
-        print(filesize)
+        # info = QFileInfo(self.filename)
+        # filesize = info.size()
+        # print(filesize)
+        with open(self.filename, 'r') as file:
+            li = file.readlines()
+        total_line = len(li)
+        print(f"Number of lines in the notepad file: {total_line}")
 
-
-        N = int(1024/chunksize)
+        N = int(total_line/chunksize)
         for i in range(N):
             data =  np.loadtxt(self.filename, dtype=float, delimiter=',', skiprows = i*chunksize, max_rows = chunksize, usecols=0)
             data1.append(data.tolist())
 
-            self.progress.emit(i)
+            self.progress.emit(int((((i+1)*100)/N)))
 
-            print(i*chunksize)
-            print(self.data)
 
         self.data = list(itertools.chain.from_iterable(data1))
         self.finished.emit(self.data)
@@ -204,19 +205,16 @@ class MainWindow(QWidget):
 
     def buttonFileClicked(self):
 
-        #self.pcg = self.fileLoad(self.pcg, self.filename)
         self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
-
 
         self.worker = Worker(self.file_name, self.pcg)
 
         self.worker.progress.connect(self.updateProgressBar)
+
         self.worker.start()
 
-        #print("antes de finished")
         self.worker.finished.connect(self.graficar)
-        #print("despues de finished")
-        #pass
+
 
 
     def graficar(self,data):
