@@ -20,7 +20,7 @@ import itertools
 # the progress bar, renaming photos, displaying information
 # in the text edit widget.
 class Worker(QThread):
-    finished = pyqtSignal()
+    finished = pyqtSignal(list)
     progress = pyqtSignal(int)
     def __init__(self, filename,data):
         super().__init__()
@@ -31,6 +31,7 @@ class Worker(QThread):
         """Long-running task."""
         i = 0
         data1=[]
+        data_int=[]
         chunksize = 100
         info = QFileInfo(self.filename)
         filesize = info.size()
@@ -48,11 +49,12 @@ class Worker(QThread):
             print(self.data)
 
         self.data = list(itertools.chain.from_iterable(data1))
-        self.finished.emit()
+        self.finished.emit(self.data)
 
+        # N=int(filesize/chunksize)
         # with open(self.filename, 'rb') as f:
         #     for i in range(N):
-        #         data_int += f.read(chunksize)
+        #         self.data+= f.read(chunksize)
         #
         #         self.progress.emit(i)
         #         print(self.data)
@@ -205,11 +207,7 @@ class MainWindow(QWidget):
         #self.pcg = self.fileLoad(self.pcg, self.filename)
         self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
 
-        #info = QFileInfo(self.file_name)
-        #size = info.size()
-        #print(size)
 
-        #file = QtFileLoader(self.file_name)
         self.worker = Worker(self.file_name, self.pcg)
 
         self.worker.progress.connect(self.updateProgressBar)
@@ -221,8 +219,9 @@ class MainWindow(QWidget):
         #pass
 
 
-    def graficar(self):
+    def graficar(self,data):
 
+        self.pcg = data
         self.time = np.arange(0, len(self.pcg), 1, dtype=np.float32)
 
         self.p1.plot(self.pcg, pen="r",symbol='o',symbolSize=5 ,symbolBrush="r")
