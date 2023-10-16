@@ -32,7 +32,7 @@ class Worker(QThread):
         i = 0
         data1=[]
         data_int=[]
-        chunksize = 100
+        chunksize = 1000
         # info = QFileInfo(self.filename)
         # filesize = info.size()
         # print(filesize)
@@ -195,6 +195,7 @@ class MainWindow(QWidget):
 
 
     def buttonFileClicked(self):
+
 
         self.file_name, ok = QFileDialog.getOpenFileName(self,"Open File", "","csv (*.csv) ")
 
