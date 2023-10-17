@@ -3,16 +3,16 @@ from scipy.io import wavfile
 import pyqtgraph as pg
 import scipy as sp
 
-
-path_file = './training-a/'
+prefix = 'e'
+can_files = 2141
+path_file = './training-'+ prefix +'/'
 file_extention = '.wav'
-path_annotation = './annotations/hand_corrected/training-a_StateAns/'
+path_annotation = './annotations/hand_corrected/training-'+ prefix +'_StateAns/'
 annotation_file_extention = '_StateAns.mat'
-prefix = 'a'
-can_files = 409
 
-for i in range(1,can_files+1):
-    name = prefix + str(i).zfill(4)
+
+for i in range(970,can_files+1):
+    name = prefix + str(i).zfill(5)
     #print(name)
     file = name + '.wav'
     #print(file)
@@ -51,18 +51,27 @@ for i in range(1,can_files+1):
     # con un nombre indicando numero de tramo. A su vez podria considerar overlapping para
     # hacer data augmentation
 
-    print(len(data_1k))
-    data_1k.tofile(name + '.csv',  sep=",")
-    anotaciones.tofile(name + '_mask.csv',  sep=",")
+    #print(len(data_1k))
+    len_data = len(data_1k)
+    chunks = int(len_data/1000)
+
+    for i in range(chunks):
+        data_1k[(i*1000):((i*1000)+1000)].tofile(name + '_'+ str(i+1) +'.csv',  sep=",")
+        anotaciones[(i*1000):((i*1000)+1000)].tofile(name + '_'+ str(i+1) + '_mask.csv',  sep=",")
+
+        # data_1k_graph = data_1k[(i*1000):((i*1000)+1000)]
+        # anotaciones_graph = anotaciones[(i * 1000):((i * 1000) + 1000)]
+        # win = pg.plot()
+        # senial = pg.PlotDataItem(data_1k_graph,  pen ='w')
+        # win.addItem(senial)
+        #
+        # marcas = pg.PlotDataItem(anotaciones_graph*1000, pen='r')
+        # win.addItem(marcas)
+
+    data_1k[(chunks * 1000):len_data].tofile(name + '_' + str(i + 1) + '.csv', sep=",")
+    anotaciones[(chunks * 1000):len_data].tofile(name + '_' + str(i + 1) + '_mask.csv', sep=",")
 
 
-# win = pg.plot()
-# print(samplerate)
-# senial = pg.PlotDataItem(data,  pen ='w')
-# win.addItem(senial)
-#
-# marcas = pg.PlotDataItem(anotaciones*1000, pen='r')
-# win.addItem(marcas)
 
 
 if __name__ == "__main__":
