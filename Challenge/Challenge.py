@@ -1,37 +1,41 @@
 import numpy as np
-import scipy.io
 from scipy.io import wavfile
 import pyqtgraph as pg
-import os
+import scipy as sp
 
 
-path_file = './training-e/'
+path_file = './training-a/'
 file_extention = '.wav'
-path_annotation = './annotations/hand_corrected/training-e_StateAns/'
+path_annotation = './annotations/hand_corrected/training-a_StateAns/'
 annotation_file_extention = '_StateAns.mat'
-prefix = 'e'
-can_files = 2141
+prefix = 'a'
+can_files = 409
 
-for i in range(2092,can_files+1):
-    name = prefix + str(i).zfill(5)
+for i in range(1,can_files+1):
+    name = prefix + str(i).zfill(4)
     #print(name)
     file = name + '.wav'
     #print(file)
 
-    a = scipy.io.loadmat(path_annotation + name + annotation_file_extention)
+    a = sp.io.loadmat(path_annotation + name + annotation_file_extention)
 
+# hago decimacion x2 tanto la senial como la posicione de las marcas, esta  muestreado a 2000Hz
     ann=[]
 
     for i in range(len(a['state_ans'])):
-        ann.append([a['state_ans'][i][0][0][0], a['state_ans'][i][1][0][0][0]])
+        ann.append([int(a['state_ans'][i][0][0][0]/2), a['state_ans'][i][1][0][0][0]])
 
 
-    samplerate, data = wavfile.read(path_file + name + file_extention)
+    samplerate, data_2k = wavfile.read(path_file + name + file_extention)
+    data_1k = sp.signal.decimate(data_2k,2)
 
-    data = data.astype(float)
-    data.tofile(name + '.csv',  sep=",")
+    data_1k = data_1k.astype(float)
 
-    anotaciones = np.zeros(len(data))
+
+
+#armo las mascaras
+
+    anotaciones = np.zeros(len(data_1k))
 
     for i in range(len(ann)-1):
         if (ann[i][1] == 'diastole'):
@@ -43,6 +47,12 @@ for i in range(2092,can_files+1):
         if (ann[i][1] == 'S2'):
             anotaciones[ann[i][0]:ann[(i + 1)][0]] = 3
 
+    # primero tengo que armar tramos de 1000 muestras y sacarlos a los archivos que sean
+    # con un nombre indicando numero de tramo. A su vez podria considerar overlapping para
+    # hacer data augmentation
+
+    print(len(data_1k))
+    data_1k.tofile(name + '.csv',  sep=",")
     anotaciones.tofile(name + '_mask.csv',  sep=",")
 
 
