@@ -3,16 +3,16 @@ from scipy.io import wavfile
 import pyqtgraph as pg
 import scipy as sp
 
-prefix = 'e'
-can_files = 2141
-path_file = './training-'+ prefix +'/'
+prefix = 'c'
+can_files = 31
+path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
-path_annotation = './annotations/hand_corrected/training-'+ prefix +'_StateAns/'
+path_annotation = './Database/annotations/hand_corrected/training-'+ prefix +'_StateAns/'
 annotation_file_extention = '_StateAns.mat'
 
 
-for i in range(970,can_files+1):
-    name = prefix + str(i).zfill(5)
+for i in range(1,can_files+1):
+    name = prefix + str(i).zfill(4)
     #print(name)
     file = name + '.wav'
     #print(file)
@@ -55,9 +55,13 @@ for i in range(970,can_files+1):
     len_data = len(data_1k)
     chunks = int(len_data/1000)
 
+    # data_1k_T= np.zeros(1000)
+    # anotaciones_T = np.zeros(1000)
+
     for i in range(chunks):
-        data_1k[(i*1000):((i*1000)+1000)].tofile(name + '_'+ str(i+1) +'.csv',  sep=",")
-        anotaciones[(i*1000):((i*1000)+1000)].tofile(name + '_'+ str(i+1) + '_mask.csv',  sep=",")
+        data_1k[(i*1000):((i*1000)+1000)].tofile('./train/'+ name + '_'+ str(i+1) +'.csv',  sep=",")
+        anotaciones[(i*1000):((i*1000)+1000)].tofile('./train_masks/'+ name + '_'+ str(i+1) + '_mask.csv',  sep=",")
+
 
         # data_1k_graph = data_1k[(i*1000):((i*1000)+1000)]
         # anotaciones_graph = anotaciones[(i * 1000):((i * 1000) + 1000)]
@@ -68,10 +72,18 @@ for i in range(970,can_files+1):
         # marcas = pg.PlotDataItem(anotaciones_graph*1000, pen='r')
         # win.addItem(marcas)
 
-    data_1k[(chunks * 1000):len_data].tofile(name + '_' + str(i + 1) + '.csv', sep=",")
-    anotaciones[(chunks * 1000):len_data].tofile(name + '_' + str(i + 1) + '_mask.csv', sep=",")
 
 
+    data_1k_zero_padding = data_1k[(chunks * 1000):len_data]
+    anotaciones_zero_padding = anotaciones[(chunks * 1000):len_data]
+
+
+    data_1k_zero_padding = np.pad(data_1k_zero_padding,(0,(1000-(len_data-chunks*1000))),'constant')
+    anotaciones_zero_padding = np.pad(anotaciones_zero_padding, (0,(1000-(len_data-chunks*1000))), 'constant')
+
+
+    data_1k_zero_padding.tofile('./train/'+name + '_' + str(chunks+ 1) + '.csv', sep=",")
+    anotaciones_zero_padding.tofile('./train_masks/'+ name + '_' + str(chunks + 1) + '_mask.csv', sep=",")
 
 
 if __name__ == "__main__":
