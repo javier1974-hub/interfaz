@@ -3,12 +3,13 @@ from scipy.io import wavfile
 import pyqtgraph as pg
 import scipy as sp
 
-prefix = 'c'
-can_files = 31
+prefix = 'a'
+can_files = 10
 path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
 path_annotation = './Database/annotations/hand_corrected/training-'+ prefix +'_StateAns/'
 annotation_file_extention = '_StateAns.mat'
+Chunk_Size = 1024
 
 
 for i in range(1,can_files+1):
@@ -53,14 +54,14 @@ for i in range(1,can_files+1):
 
     #print(len(data_1k))
     len_data = len(data_1k)
-    chunks = int(len_data/1000)
+    chunks = int(len_data/Chunk_Size)
 
     # data_1k_T= np.zeros(1000)
     # anotaciones_T = np.zeros(1000)
 
     for i in range(chunks):
-        data_1k[(i*1000):((i*1000)+1000)].tofile('./train/'+ name + '_'+ str(i+1) +'.csv',  sep=",")
-        anotaciones[(i*1000):((i*1000)+1000)].tofile('./train_masks/'+ name + '_'+ str(i+1) + '_mask.csv',  sep=",")
+        data_1k[(i*Chunk_Size):((i*Chunk_Size)+Chunk_Size)].tofile('./train/'+ name + '_'+ str(i+1) +'.csv',  sep=",")
+        anotaciones[(i*Chunk_Size):((i*Chunk_Size)+Chunk_Size)].tofile('./train_masks/'+ name + '_'+ str(i+1) + '_mask.csv',  sep=",")
 
 
         # data_1k_graph = data_1k[(i*1000):((i*1000)+1000)]
@@ -74,12 +75,12 @@ for i in range(1,can_files+1):
 
 
 
-    data_1k_zero_padding = data_1k[(chunks * 1000):len_data]
-    anotaciones_zero_padding = anotaciones[(chunks * 1000):len_data]
+    data_1k_zero_padding = data_1k[(chunks * Chunk_Size):len_data]
+    anotaciones_zero_padding = anotaciones[(chunks * Chunk_Size):len_data]
 
 
-    data_1k_zero_padding = np.pad(data_1k_zero_padding,(0,(1000-(len_data-chunks*1000))),'constant')
-    anotaciones_zero_padding = np.pad(anotaciones_zero_padding, (0,(1000-(len_data-chunks*1000))), 'constant')
+    data_1k_zero_padding = np.pad(data_1k_zero_padding,(0,(Chunk_Size-(len_data-chunks*Chunk_Size))),'constant')
+    anotaciones_zero_padding = np.pad(anotaciones_zero_padding, (0,(Chunk_Size-(len_data-chunks*Chunk_Size))), 'constant')
 
 
     data_1k_zero_padding.tofile('./train/'+name + '_' + str(chunks+ 1) + '.csv', sep=",")

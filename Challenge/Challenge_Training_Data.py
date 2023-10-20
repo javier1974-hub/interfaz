@@ -47,6 +47,8 @@ class PCG_Dataset(Dataset):
 
 
 
+
+
     def __len__(self):
         if (self.train_masks) is not None:
             assert (len(self.pcgs)) == len(self.masks), 'not the same number of images and masks'
@@ -86,11 +88,10 @@ class PCG_Dataset(Dataset):
                 mask = mask[None, :]
                 #mask_max = mask.max().item()          #normaliza las masrecaras para que quede entre 0 y 1 (cosa que ya pasa, pero por las dudas)
                 #mask /= mask_max
-
         else:
             return pcg  # si no existen las mascaras, devuelve la senial
              
-
+        print([pcg_name, mask_name])
         return pcg, mask  # devuelve senial y mascaras 
 
 
@@ -101,7 +102,7 @@ full_dataset = PCG_Dataset(TRAIN_PATH, TRAIN_MASKS_PATH)
 
 
 BATCH_SIZE = 8                                        # tamabio del batch
-TRAIN_SIZE = int(len(full_dataset)*0.7)  -1              # el 80% del dataset lo usa para entrenamiento
+TRAIN_SIZE = int(len(full_dataset)*0.7) -1              # el 80% del dataset lo usa para entrenamiento
 VAL_SIZE =  int((len(full_dataset) - TRAIN_SIZE)/2)              # el 20% restante lo usa para validacion
 TEST_SIZE = int((len(full_dataset) - TRAIN_SIZE)/2)  # len(full_dataset) - TRAIN_SIZE - VAL_SIZE
 
@@ -132,10 +133,7 @@ for i, (x, y) in enumerate(train_loader):
     print(i, x.shape, y.shape)
     if i==3: break
 
-
-
 pcgs, mask = next(iter(train_loader))
-
 
 def plot_mini_batch(pcgs, mask):
     plt.figure(figsize=(15, 15))
@@ -148,7 +146,7 @@ def plot_mini_batch(pcgs, mask):
 
 
         plt.plot(pcg[i, :])
-        plt.plot(mask[i, :])
+        plt.plot(mask[i, :]/3)
 
 
         plt.axis('On')
@@ -157,11 +155,6 @@ def plot_mini_batch(pcgs, mask):
 
  
 plot_mini_batch(pcgs, mask)     # mostramos las seniales
-
-
-
-
-
 
 
 def accuracy(model, loader):
@@ -181,7 +174,7 @@ def accuracy(model, loader):
             scores = model(x)
             
             y = y.squeeze(1)
-            cost += F.cross_entropy(input=scores, target=y).item() # item nos devuielve el valor escalar del tensor
+            cost += F.cross_entropy(input=scores, target=y).item() # item nos devuelve el valor escalar del tensor
             #cost = F.mse_loss(input=scores, target=y)
            
             preds  = torch.argmax(scores, dim=1)
@@ -213,7 +206,7 @@ def accuracy(model, loader):
 
 # funcion de entrenamiento.
 
-def train(model, optimiser, scheduler=None, epochs= 50, store_every=5):
+def train(model, optimiser, scheduler=None, epochs= 10, store_every=5):
     model = model.to(device=device)                             # pasa el modelo a GPU
     train_acc_mb=[]
     train_cost_mb =[]
@@ -400,7 +393,7 @@ class Up_Conv(nn.Module):
         super().__init__()
         self.upsample_layer = nn.Sequential(
             #nn.MaxPool1d(2, 2),
-            nn.Upsample(scale_factor=2, mode='linear'),  # interpola y luego hace convolucion de 1x1
+            nn.Upsample(scale_factor=2, mode='nearest'),  # interpola y luego hace convolucion de 1x1
             nn.Conv1d(channels_in, channels_in // 2, kernel_size=1, stride=1)
         )
         self.decoder = Double_Conv(channels_in, channels_out)
@@ -463,7 +456,7 @@ class UNET(nn.Module):
 
 def test():
     x = torch.randn((8, 1, 1024))
-    model = UNET(1, 64, 3)
+    model = UNET(1, 64, 4)
     return model(x)
 
 
@@ -472,14 +465,12 @@ print(preds.shape)
 
 # comienza el entrenamiento
 
-model = UNET(1, 64, 3)
+model = UNET(1, 64, 4)
 #preds = test()
 
 
-
-
 #optimiser_unet = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.95)
-optimiser_unet = torch.optim.Adam(model.parameters(),lr=0.001)
+optimiser_unet = torch.optim.Adam(model.parameters(),lr=0.1)
 #epochs = 5
 
 train_acc_mb ,train_cost_mb,val_acc_mb,val_cost_mb, dice_acc_mb, iou_acc_mb, test_acc_mb, test_cost_mb, test_dice_mb, test_iou_mb, train_acc_epoch, train_cost_epoch, val_acc_epoch, val_cost_epoch, dice_acc_epoch, iou_acc_epoch, test_acc_epoch, test_cost_epoch, test_dice_epoch, test_iou_epoch  = train(model, optimiser_unet)
@@ -565,7 +556,7 @@ torch.save(model.state_dict(),model_path)
 
 # Cargo el modelo previamente guardado
 
-modelo = UNET(1,64,3)
+modelo = UNET(1,64,4)
 modelo.load_state_dict(torch.load(model_path))
 modelo.eval()
 
@@ -578,7 +569,7 @@ pcgs_val, mask_val = next(iter(val_loader))
 pcgs_val = pcgs_val.to(device, dtype=torch.float32)    # pongo seniales en gpu
 modelo = modelo.to(device)                             # mando el modelo a GPU
 with torch.no_grad():
-    scores = modelo(pcgs_val)                          # calculo scores (tienen dos canales con la pribabilidad que pertenezca a una u otra clase)
+    scores = modelo(pcgs_val)                          # calculo scores (tienen dos canales con la probabilidad que pertenezca a una u otra clase)
     preds = torch.argmax(scores, dim=1).float()        # calcula predicciones (como se queda con el mayor en la dimension de canales, da la mascara)
 
 pcgs_val = pcgs_val.squeeze(1).cpu().numpy() 
@@ -606,19 +597,23 @@ print(pcgs_val.shape,preds.shape,mask_val.shape)
    
 def plot_mini_batch_salida(pcgs, mask, preds):
     
-    mask_base= np.zeros(mask.shape)
-    mask_base[mask == 0] = 1
+    mask_Diastole= np.zeros(mask.shape)
+    mask_Diastole[mask == 0] = 1
     mask_S1= np.zeros(mask.shape)
     mask_S1[mask == 1] = 1
+    mask_Systole= np.zeros(mask.shape)
+    mask_Systole[mask == 2] = 1
     mask_S2= np.zeros(mask.shape)
-    mask_S2[mask == 2] = 1
+    mask_S2[mask == 3] = 1
     
-    preds_base= np.zeros(preds.shape)
-    preds_base[preds == 0] = 1
+    preds_Diastole= np.zeros(preds.shape)
+    preds_Diastole[preds == 0] = 1
     preds_S1= np.zeros(preds.shape)
     preds_S1[preds == 1] = 1
+    preds_Systole= np.zeros(preds.shape)
+    preds_Systole[preds == 2] = 1
     preds_S2= np.zeros(preds.shape)
-    preds_S2[preds == 2] = 1
+    preds_S2[preds == 3] = 1
     
     plt.figure(figsize=(15,15))
     for i in range(BATCH_SIZE):              #hasta 8        
@@ -626,8 +621,8 @@ def plot_mini_batch_salida(pcgs, mask, preds):
         
         
         plt.plot(pcgs[i,:], 'b',label='pcg')     
-        plt.plot(mask_base[i,:], 'r',label='mask') 
-        plt.plot(preds_base[i,:],'g', label='pred')
+        plt.plot(mask_Diastole[i,:], 'r',label='mask')
+        plt.plot(preds_Diastole[i,:],'g', label='pred')
   
         
         plt.axis('On')
@@ -641,15 +636,30 @@ def plot_mini_batch_salida(pcgs, mask, preds):
         
        
         plt.plot(pcgs[i,:], 'b',label='pcg')     
-        plt.plot(mask_S1[i,:], 'r',label='mask') 
-        plt.plot(preds_S1[i,:],'g', label='pred')
+        plt.plot(mask_Systole[i,:], 'r',label='mask')
+        plt.plot(preds_Systole[i,:],'g', label='pred')
   
         
         plt.axis('On')
         plt.legend()
-        plt.title('S1')
-    plt.savefig('S1.png', dpi=1200)  
-     
+        plt.title('Systole')
+    plt.savefig('Systole.png', dpi=1200)
+
+    plt.figure(figsize=(15, 15))
+    for i in range(BATCH_SIZE):  # hasta 8
+        plt.subplot(4, 2, i + 1)  # subplot nro filas, nro columnas, posicion. La primera imagen empieza en la pos=1
+
+        plt.plot(pcgs[i, :], 'b', label='pcg')
+        plt.plot(mask_S2[i, :], 'r', label='mask')
+        plt.plot(preds_S2[i, :], 'g', label='pred')
+
+        plt.axis('On')
+        plt.legend()
+        plt.title('S2')
+    plt.savefig('S2.png', dpi=1200)
+
+
+
     plt.figure(figsize=(15,15))
     for i in range(BATCH_SIZE):              #hasta 8        
         plt.subplot(4, 2,i+1)               # subplot nro filas, nro columnas, posicion. La primera imagen empieza en la pos=1 
@@ -663,7 +673,9 @@ def plot_mini_batch_salida(pcgs, mask, preds):
         plt.axis('On')
         plt.legend()
         plt.title('S2')
-    plt.savefig('S2.png', dpi=1200) 
+    plt.savefig('S2.png', dpi=1200)
+
+
     plt.show()
     
 
