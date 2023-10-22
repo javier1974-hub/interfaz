@@ -4,7 +4,7 @@ import pyqtgraph as pg
 import scipy as sp
 
 prefix = 'a'
-can_files = 10
+can_files = 409
 path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
 path_annotation = './Database/annotations/hand_corrected/training-'+ prefix +'_StateAns/'
