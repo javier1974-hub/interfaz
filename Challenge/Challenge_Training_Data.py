@@ -14,6 +14,17 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
 
 
+def checkpoint(model, optimizer, filename):
+   torch.save({
+        'optimizer': optimizer.state_dict(),
+        'model': model.state_dict(),
+    }, filename)
+
+def resume(model, optimizer,filename):
+    checkpoint = torch.load(filename)
+    model.load_state_dict(checkpoint['model'])
+    optimizer.load_state_dict(checkpoint['optimizer'])
+
 #PATH = '/Algoritmos/Prueba_Torch_PyCharm/'
 #TRAIN_PATH = '/Algoritmos/Prueba_Torch_PyCharm/train/'
 #TRAIN_MASKS_PATH = '/Algoritmos/Prueba_Torch_PyCharm/train_masks/'
@@ -236,6 +247,11 @@ def train(model, optimiser, scheduler=None, epochs= 40, store_every=5):
     test_dice_epoch = []
     test_acc_epoch = []
     test_cost_epoch = []
+
+    if start_epoch > 0:
+        resume_epoch = start_epoch - 1
+        resume(model, f"epoch-{resume_epoch}.pth")
+
     for epoch in range(epochs):
         train_correct_num = 0                                        # acumuladores que se resetean en cada epoch
         train_total = 0                                              # acumuladores que se resetean en cada epoch
@@ -333,11 +349,12 @@ def train(model, optimiser, scheduler=None, epochs= 40, store_every=5):
         test_dice_epoch.append(test_dice_mb_float) 
         test_iou_epoch.append(test_iou_mb_float)
 
-        torch.save({
-            'epoch': epochs,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimiser.state_dict(),
-            'loss': cost }, './modelChkPoint.pth')
+        checkpoint(model, optimiser,f"epoch-{epoch}.pth")
+        # torch.save({
+        #     'epoch': epochs,
+        #     'model_state_dict': model.state_dict(),
+        #     'optimizer_state_dict': optimiser.state_dict(),
+        #     'loss': cost }, './modelChkPoint.pth')
 
     return train_acc_mb ,train_cost_mb,val_acc_mb,val_cost_mb, dice_acc_mb, iou_acc_mb, \
             test_acc_mb, test_cost_mb, test_dice_mb, test_iou_mb, train_acc_epoch, train_cost_epoch, \
@@ -352,8 +369,10 @@ def train(model, optimiser, scheduler=None, epochs= 40, store_every=5):
 class Conv_3_k(nn.Module):
     def __init__(self, channels_in, channels_out):
         super().__init__()
+        self.dropout = nn.Dropout(0.2)
         self.conv1 = nn.Conv1d(channels_in, channels_out, kernel_size=3, stride=1, padding='same')  # de movida va conv 1d
     def forward(self, x):
+        x = self.dropout(x)
         return self.conv1(x)
 
 
@@ -488,6 +507,7 @@ model = UNET(1, 128, 4)
 #optimiser_unet = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.95)
 optimiser_unet = torch.optim.Adam(model.parameters(),lr=0.00005)
 #epochs = 5
+start_epoch = 0
 
 train_acc_mb ,train_cost_mb,val_acc_mb,val_cost_mb, dice_acc_mb, iou_acc_mb, test_acc_mb, test_cost_mb, test_dice_mb, test_iou_mb, train_acc_epoch, train_cost_epoch, val_acc_epoch, val_cost_epoch, dice_acc_epoch, iou_acc_epoch, test_acc_epoch, test_cost_epoch, test_dice_epoch, test_iou_epoch  = train(model, optimiser_unet)
 
