@@ -17,6 +17,7 @@ print(device)
 class Conv_3_k(nn.Module):
     def __init__(self, channels_in, channels_out):
         super().__init__()
+        #self.dropout = nn.Dropout(0.2)
         self.conv1 = nn.Conv1d(channels_in, channels_out, kernel_size=3, stride=1,
                                padding='same')  # de movida va conv 1d
 

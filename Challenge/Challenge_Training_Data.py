@@ -15,15 +15,18 @@ print(device)
 
 
 def checkpoint(model, optimizer, filename):
-   torch.save({
+  path = "./"
+  torch.save({
         'optimizer': optimizer.state_dict(),
         'model': model.state_dict(),
-    }, filename)
+    }, path + filename)
 
 def resume(model, optimizer,filename):
-    checkpoint = torch.load(filename)
-    model.load_state_dict(checkpoint['model'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
+  path = "./"
+  checkpoint = torch.load(path + filename ,map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
+  model.load_state_dict(checkpoint['model'])
+  optimizer.load_state_dict(checkpoint['optimizer'])
+
 
 #PATH = '/Algoritmos/Prueba_Torch_PyCharm/'
 #TRAIN_PATH = '/Algoritmos/Prueba_Torch_PyCharm/train/'
@@ -224,7 +227,7 @@ def accuracy(model, loader):
 
 # funcion de entrenamiento.
 
-def train(model, optimiser, scheduler=None, epochs= 40, store_every=5):
+def train(model, optimiser, start_epoch , epochs, store_every=5):
     model = model.to(device=device)                             # pasa el modelo a GPU
     train_acc_mb=[]
     train_cost_mb =[]
@@ -249,10 +252,14 @@ def train(model, optimiser, scheduler=None, epochs= 40, store_every=5):
     test_cost_epoch = []
 
     if start_epoch > 0:
-        resume_epoch = start_epoch - 1
-        resume(model, f"epoch-{resume_epoch}.pth")
+      resume_epoch = start_epoch - 1
+      resume(model, optimiser, f"epoch-{resume_epoch}.pth")
+      print('start_epoch' + str(start_epoch))
+      print('resume_epoch' + str(resume_epoch))
+    else:
+      resume_epoch = 0
 
-    for epoch in range(epochs):
+    for epoch in range(resume_epoch, epochs):
         train_correct_num = 0                                        # acumuladores que se resetean en cada epoch
         train_total = 0                                              # acumuladores que se resetean en cada epoch
         train_cost_acum = 0.                                         # acumuladores que se resetean en cada epoch
@@ -349,7 +356,8 @@ def train(model, optimiser, scheduler=None, epochs= 40, store_every=5):
         test_dice_epoch.append(test_dice_mb_float) 
         test_iou_epoch.append(test_iou_mb_float)
 
-        checkpoint(model, optimiser,f"epoch-{epoch}.pth")
+        checkpoint(model, optimiser, f"epoch-{epoch}.pth")
+        print('guardo el modelo')
         # torch.save({
         #     'epoch': epochs,
         #     'model_state_dict': model.state_dict(),
@@ -491,7 +499,7 @@ class UNET(nn.Module):
 
 def test():
     x = torch.randn((8, 1, 1024))
-    model = UNET(1, 128, 4)
+    model = UNET(1, 64, 4)
     return model(x)
 
 
@@ -500,16 +508,16 @@ print(preds.shape)
 
 # comienza el entrenamiento
 
-model = UNET(1, 128, 4)
+model = UNET(1, 64, 4)
 #preds = test()
 
 
 #optimiser_unet = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.95)
-optimiser_unet = torch.optim.Adam(model.parameters(),lr=0.00005)
-#epochs = 5
+optimiser_unet = torch.optim.Adam(model.parameters(),lr=0.001)
+epochs = 10
 start_epoch = 0
 
-train_acc_mb ,train_cost_mb,val_acc_mb,val_cost_mb, dice_acc_mb, iou_acc_mb, test_acc_mb, test_cost_mb, test_dice_mb, test_iou_mb, train_acc_epoch, train_cost_epoch, val_acc_epoch, val_cost_epoch, dice_acc_epoch, iou_acc_epoch, test_acc_epoch, test_cost_epoch, test_dice_epoch, test_iou_epoch  = train(model, optimiser_unet)
+train_acc_mb ,train_cost_mb,val_acc_mb,val_cost_mb, dice_acc_mb, iou_acc_mb, test_acc_mb, test_cost_mb, test_dice_mb, test_iou_mb, train_acc_epoch, train_cost_epoch, val_acc_epoch, val_cost_epoch, dice_acc_epoch, iou_acc_epoch, test_acc_epoch, test_cost_epoch, test_dice_epoch, test_iou_epoch  = train(model, optimiser_unet, start_epoch, epochs)
 
 #plt.figure(figsize=(20,20))
 plt.figure()
@@ -592,7 +600,7 @@ torch.save(model.state_dict(),model_path)
 
 # Cargo el modelo previamente guardado
 
-modelo = UNET(1,128,4)
+modelo = UNET(1,64,4)
 modelo.load_state_dict(torch.load(model_path))
 modelo.eval()
 
