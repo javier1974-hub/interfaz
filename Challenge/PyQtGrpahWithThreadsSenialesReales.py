@@ -188,7 +188,7 @@ class MainWindow(QWidget):
 
 
          #modelo = UNET(1, 64, 3)
-         self.model.load_state_dict(torch.load(model_path))
+         self.model.load_state_dict(torch.load(model_path)['model'])
          self.model.eval()
 
          self.button_File.setEnabled(True)

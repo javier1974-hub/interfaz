@@ -4,6 +4,7 @@ import pyqtgraph as pg
 import scipy as sp
 
 prefix = 'a'
+inicio = 404
 can_files = 409
 path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
@@ -12,7 +13,7 @@ annotation_file_extention = '_StateAns.mat'
 Chunk_Size = 1024
 
 
-for i in range(1,can_files+1):
+for i in range(inicio,can_files+1):
     name = prefix + str(i).zfill(4)
     #print(name)
     file = name + '.wav'
@@ -44,9 +45,9 @@ for i in range(1,can_files+1):
         if (ann[i][1] == 'S1'):
             anotaciones[ann[i][0]:ann[(i + 1)][0]] = 1
         if (ann[i][1] == 'systole'):
-            anotaciones[ann[i][0]:ann[(i + 1)][0]] = 2
+            anotaciones[ann[i][0]:ann[(i + 1)][0]] = 0
         if (ann[i][1] == 'S2'):
-            anotaciones[ann[i][0]:ann[(i + 1)][0]] = 3
+            anotaciones[ann[i][0]:ann[(i + 1)][0]] = 2
 
     # primero tengo que armar tramos de 1000 muestras y sacarlos a los archivos que sean
     # con un nombre indicando numero de tramo. A su vez podria considerar overlapping para
@@ -56,12 +57,18 @@ for i in range(1,can_files+1):
     len_data = len(data_1k)
     chunks = int(len_data/Chunk_Size)
 
-    # data_1k_T= np.zeros(1000)
-    # anotaciones_T = np.zeros(1000)
+    # data_1k_graph = data_1k[(i*1000):((i*1000)+1000)]
+    # anotaciones_graph = anotaciones[(i * 1000):((i * 1000) + 1000)]
+    # win = pg.plot()
+    # senial = pg.PlotDataItem(data_1k,  pen ='w')
+    # win.addItem(senial)
+    #
+    # marcas = pg.PlotDataItem(anotaciones*1000, pen='r')
+    # win.addItem(marcas)
 
     for i in range(chunks):
-        data_1k[(i*Chunk_Size):((i*Chunk_Size)+Chunk_Size)].tofile('./train/'+ name + '_'+ str(i+1) +'.csv',  sep=",")
-        anotaciones[(i*Chunk_Size):((i*Chunk_Size)+Chunk_Size)].tofile('./train_masks/'+ name + '_'+ str(i+1) + '_mask.csv',  sep=",")
+        data_1k[(i*Chunk_Size):((i*Chunk_Size)+Chunk_Size)].tofile('./train1/'+ name + '_'+ str(i+1).zfill(2) +'.csv',  sep=",")
+        anotaciones[(i*Chunk_Size):((i*Chunk_Size)+Chunk_Size)].tofile('./train_masks1/'+ name + '_'+ str(i+1).zfill(2) + '_mask.csv',  sep=",")
 
 
         # data_1k_graph = data_1k[(i*1000):((i*1000)+1000)]
@@ -72,19 +79,23 @@ for i in range(1,can_files+1):
         #
         # marcas = pg.PlotDataItem(anotaciones_graph*1000, pen='r')
         # win.addItem(marcas)
+        #
+        # text = pg.TextItem(name+'_'+str(i), color='g')
+        # win.addItem(text)
+        # text.setPos(20, 5000)
 
 
 
-    data_1k_zero_padding = data_1k[(chunks * Chunk_Size):len_data]
-    anotaciones_zero_padding = anotaciones[(chunks * Chunk_Size):len_data]
-
-
-    data_1k_zero_padding = np.pad(data_1k_zero_padding,(0,(Chunk_Size-(len_data-chunks*Chunk_Size))),'constant')
-    anotaciones_zero_padding = np.pad(anotaciones_zero_padding, (0,(Chunk_Size-(len_data-chunks*Chunk_Size))), 'constant')
-
-
-    data_1k_zero_padding.tofile('./train/'+name + '_' + str(chunks+ 1) + '.csv', sep=",")
-    anotaciones_zero_padding.tofile('./train_masks/'+ name + '_' + str(chunks + 1) + '_mask.csv', sep=",")
+    # data_1k_zero_padding = data_1k[(chunks * Chunk_Size):len_data]
+    # anotaciones_zero_padding = anotaciones[(chunks * Chunk_Size):len_data]
+    #
+    #
+    # data_1k_zero_padding = np.pad(data_1k_zero_padding,(0,(Chunk_Size-(len_data-chunks*Chunk_Size))),'constant')
+    # anotaciones_zero_padding = np.pad(anotaciones_zero_padding, (0,(Chunk_Size-(len_data-chunks*Chunk_Size))), 'constant')
+    #
+    #
+    # data_1k_zero_padding.tofile('./train1/'+name + '_' + str(chunks+ 1).zfill(2) + '.csv', sep=",")
+    # anotaciones_zero_padding.tofile('./train_masks1/'+ name + '_' + str(chunks + 1).zfill(2) + '_mask.csv', sep=",")
 
 
 if __name__ == "__main__":

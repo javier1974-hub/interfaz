@@ -56,9 +56,10 @@ class PCG_Dataset(Dataset):
         self.mask_transforms = mask_transforms  # ademas convierte a tensores de pytorch
 
 
-        self.pcgs = sorted(os.listdir(self.train_data), key=len)  # son todas las seniales del directrorio de train_data, ademas esta ordenada
-        self.masks = sorted(os.listdir(self.train_masks), key=len) # son todas las mascaras del directrorio de train_masks, ademas esta ordenada
-
+        self.pcgs = sorted(os.listdir(self.train_data), key=str)  # son todas las seniales del directrorio de train_data, ademas esta ordenada
+        self.masks = sorted(os.listdir(self.train_masks), key=str) # son todas las mascaras del directrorio de train_masks, ademas esta ordenada
+        print(self.pcgs)
+        print(self.masks)
 
 
 
@@ -84,9 +85,9 @@ class PCG_Dataset(Dataset):
             pcg = torch.from_numpy(pcg)
 
 
-        #pcg_max = pcg.max().item()                   # normaliza el pcg ya que van de -1  a 1
-        #pcg_min = pcg.min().item()
-        #pcg = (pcg - pcg_min) / (pcg_max - pcg_min)  # ahora queda entre 0 y 1
+        pcg_max = pcg.max().item()                   # normaliza el pcg ya que van de -1  a 1
+        pcg_min = pcg.min().item()
+        pcg = (pcg - pcg_min) / (pcg_max - pcg_min)  # ahora queda entre 0 y 1
         pcg = pcg[None,:]
 
         
@@ -116,7 +117,7 @@ full_dataset = PCG_Dataset(TRAIN_PATH, TRAIN_MASKS_PATH)
 
 
 BATCH_SIZE = 8                                        # tamabio del batch
-TRAIN_SIZE = int(len(full_dataset)*0.7)  -1         # el 80% del dataset lo usa para entrenamiento
+TRAIN_SIZE = int(len(full_dataset)*0.7)  -1     # el 80% del dataset lo usa para entrenamiento
 VAL_SIZE =  int((len(full_dataset) - TRAIN_SIZE)/2)              # el 20% restante lo usa para validacion
 TEST_SIZE = int((len(full_dataset) - TRAIN_SIZE)/2)  # len(full_dataset) - TRAIN_SIZE - VAL_SIZE
 
@@ -160,7 +161,7 @@ def plot_mini_batch(pcgs, mask):
 
 
         plt.plot(pcg[i, :])
-        plt.plot(mask[i, :]*1000)
+        plt.plot(mask[i, :])
 
 
         plt.axis('On')
@@ -499,7 +500,7 @@ class UNET(nn.Module):
 
 def test():
     x = torch.randn((8, 1, 1024))
-    model = UNET(1, 64, 4)
+    model = UNET(1, 64, 3)
     return model(x)
 
 
@@ -508,13 +509,13 @@ print(preds.shape)
 
 # comienza el entrenamiento
 
-model = UNET(1, 64, 4)
+model = UNET(1, 64, 3)
 #preds = test()
 
 
 #optimiser_unet = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.95)
 optimiser_unet = torch.optim.Adam(model.parameters(),lr=0.001)
-epochs = 10
+epochs = 40
 start_epoch = 0
 
 train_acc_mb ,train_cost_mb,val_acc_mb,val_cost_mb, dice_acc_mb, iou_acc_mb, test_acc_mb, test_cost_mb, test_dice_mb, test_iou_mb, train_acc_epoch, train_cost_epoch, val_acc_epoch, val_cost_epoch, dice_acc_epoch, iou_acc_epoch, test_acc_epoch, test_cost_epoch, test_dice_epoch, test_iou_epoch  = train(model, optimiser_unet, start_epoch, epochs)
@@ -600,7 +601,7 @@ torch.save(model.state_dict(),model_path)
 
 # Cargo el modelo previamente guardado
 
-modelo = UNET(1,64,4)
+modelo = UNET(1,64,3)
 modelo.load_state_dict(torch.load(model_path))
 modelo.eval()
 
@@ -641,32 +642,28 @@ print(pcgs_val.shape,preds.shape,mask_val.shape)
    
 def plot_mini_batch_salida(pcgs, mask, preds):
     
-    mask_Diastole= np.zeros(mask.shape)
-    mask_Diastole[mask == 0] = 1
+    mask_Base= np.zeros(mask.shape)
+    mask_Base[mask == 0] = 1
     mask_S1= np.zeros(mask.shape)
     mask_S1[mask == 1] = 1
-    mask_Systole= np.zeros(mask.shape)
-    mask_Systole[mask == 2] = 1
     mask_S2= np.zeros(mask.shape)
-    mask_S2[mask == 3] = 1
+    mask_S2[mask == 2] = 1
     
-    preds_Diastole= np.zeros(preds.shape)
-    preds_Diastole[preds == 0] = 1
+    preds_Base= np.zeros(preds.shape)
+    preds_Base[preds == 0] = 1
     preds_S1= np.zeros(preds.shape)
     preds_S1[preds == 1] = 1
-    preds_Systole= np.zeros(preds.shape)
-    preds_Systole[preds == 2] = 1
     preds_S2= np.zeros(preds.shape)
-    preds_S2[preds == 3] = 1
+    preds_S2[preds == 2] = 1
     
     plt.figure(figsize=(15,15))
     for i in range(BATCH_SIZE):              #hasta 8        
-        plt.subplot(4, 2,i+1)               # subplot nro filas, nro columnas, posicion. La primera imagen empieza en la pos=1 
+        plt.subplot(4, 2,i+1)           #subplot nro filas, nro columnas, posicion. La primera imagen empieza en la pos=1
         
         
         plt.plot(pcgs[i,:], 'b',label='pcg')     
-        plt.plot(mask_Diastole[i,:]*1000, 'r',label='mask')
-        plt.plot(preds_Diastole[i,:]*1000,'g', label='pred')
+        plt.plot(mask_Base[i,:], 'r',label='mask')
+        plt.plot(preds_Base[i,:],'g', label='pred')
   
         
         plt.axis('On')
@@ -675,32 +672,32 @@ def plot_mini_batch_salida(pcgs, mask, preds):
     plt.savefig('Linea_de_Base.png', dpi=1200)    
     
     plt.figure(figsize=(15,15))
-    for i in range(BATCH_SIZE):              #hasta 8        
-        plt.subplot(4, 2,i+1)               # subplot nro filas, nro columnas, posicion. La primera imagen empieza en la pos=1 
-        
-       
-        plt.plot(pcgs[i,:], 'b',label='pcg')     
-        plt.plot(mask_Systole[i,:]*1000, 'r',label='mask')
-        plt.plot(preds_Systole[i,:]*1000,'g', label='pred')
-  
-        
-        plt.axis('On')
-        plt.legend()
-        plt.title('Systole')
-    plt.savefig('Systole.png', dpi=1200)
+    # for i in range(BATCH_SIZE):              #hasta 8
+    #     plt.subplot(4, 2,i+1)               # subplot nro filas, nro columnas, posicion. La primera imagen empieza en la pos=1
+    #
+    #
+    #     plt.plot(pcgs[i,:], 'b',label='pcg')
+    #     plt.plot(mask_Systole[i,:], 'r',label='mask')
+    #     plt.plot(preds_Systole[i,:],'g', label='pred')
+    #
+    #
+    #     plt.axis('On')
+    #     plt.legend()
+    #     plt.title('Systole')
+    # plt.savefig('Systole.png', dpi=1200)
 
     plt.figure(figsize=(15, 15))
     for i in range(BATCH_SIZE):  # hasta 8
         plt.subplot(4, 2, i + 1)  # subplot nro filas, nro columnas, posicion. La primera imagen empieza en la pos=1
 
         plt.plot(pcgs[i, :], 'b', label='pcg')
-        plt.plot(mask_S2[i, :]*1000, 'r', label='mask')
-        plt.plot(preds_S2[i, :]*1000, 'g', label='pred')
+        plt.plot(mask_S1[i, :], 'r', label='mask')
+        plt.plot(preds_S1[i, :], 'g', label='pred')
 
         plt.axis('On')
         plt.legend()
-        plt.title('S2')
-    plt.savefig('S2.png', dpi=1200)
+        plt.title('S1')
+    plt.savefig('S1.png', dpi=1200)
 
 
 
@@ -710,8 +707,8 @@ def plot_mini_batch_salida(pcgs, mask, preds):
         
        
         plt.plot(pcgs[i,:], 'b',label='pcg')     
-        plt.plot(mask_S2[i,:]*1000, 'r',label='mask')
-        plt.plot(preds_S2[i,:]*1000,'g', label='pred')
+        plt.plot(mask_S2[i,:], 'r',label='mask')
+        plt.plot(preds_S2[i,:],'g', label='pred')
   
         
         plt.axis('On')
