@@ -364,32 +364,57 @@ class Conv_3_k(nn.Module):
         #x = self.dropout(x)
         return self.conv1(x)
 
-class residual_block(nn.Module):
-
-
-    def __init__(self, channels_in, channels_out,   stride = 1):
-        super().__init__()
-
-        self.conv1 = Conv_3_k(channels_in, channels_out, stride)
-        self.bn1 = nn.BatchNorm1d(channels_out)
-        self.conv2 = Conv_3_k(channels_out, channels_out, stride=1)
-        self.bn2 = nn.BatchNorm1d(channels_out)
-
-        self.residual = nn.Sequential(nn.Conv1d(channels_in,channels_out, kernel_size = 1, stride = stride),
-                                          nn.BatchNorm1d(channels_out))
-    def forward(self,x):
-        identity = self.residual(x)
-        y = F.relu(self.bn1(self.conv1(x)))
-        y = self.bn2(self.conv2(y))
-
-        y += identity
-
-        return F.relu(y)
+# class residual_block(nn.Module):
+#
+#
+#     def __init__(self, channels_in, channels_out,   stride = 1):
+#         super().__init__()
+#
+#         self.conv1 = Conv_3_k(channels_in, channels_out, stride)
+#         self.bn1 = nn.BatchNorm1d(channels_out)
+#         self.conv2 = Conv_3_k(channels_out, channels_out, stride=1)
+#         self.bn2 = nn.BatchNorm1d(channels_out)
+#
+#         self.residual = nn.Sequential(nn.Conv1d(channels_in,channels_out, kernel_size = 1, stride = stride),
+#                                           nn.BatchNorm1d(channels_out))
+#     def forward(self,x):
+#         identity = self.residual(x)
+#         y = F.relu(self.bn1(self.conv1(x)))
+#         y = self.bn2(self.conv2(y))
+#
+#         y += identity
+#
+#         return F.relu(y)
 
 
 
 
 # Se hace el bloque de dos convoluciones una detras de la otra
+class First_Conv(nn.Module):
+    '''
+    Double convolution block for U-Net
+    '''
+    def __init__(self, channels_in, channels_out):
+        super().__init__()
+        self.first_conv = nn.Sequential(
+            nn.Conv1d(channels_in, channels_out,kernel_size = 3, stride=1, padding=1),
+            nn.BatchNorm1d(channels_out),
+            nn.ReLU(),
+            nn.Conv1d(channels_out, channels_out,kernel_size = 3, stride=1, padding=1),
+        )
+        self.residual = nn.Sequential(nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=1, padding=0),
+                                     nn.BatchNorm1d(channels_out))
+        #self.residual = Conv_3_k(channels_in, channels_out)
+
+    def forward(self, x):
+        #print('First_Conv x ' + str(x.size()))
+        y = self.first_conv(x)
+        #print('First_Conv y ' + str(y.size()))
+        s = self.residual(x)
+        #print('First_Conv s ' + str(s.size()))
+        skip = y + s
+        #print('First_Conv skip ' + str(skip.size()))
+        return skip
 
 class Double_Conv(nn.Module):
     '''
@@ -401,19 +426,23 @@ class Double_Conv(nn.Module):
         self.double_conv = nn.Sequential(
             nn.BatchNorm1d(channels_in),
             nn.ReLU(),
-            Conv_3_k(channels_in, channels_out),
+            nn.Conv1d(channels_in, channels_out,kernel_size = 3, stride=2 , padding=1),
             nn.BatchNorm1d(channels_out),
             nn.ReLU(),
-            Conv_3_k(channels_out, channels_out),
+            nn.Conv1d(channels_out, channels_out,kernel_size = 3, stride=1, padding=1),
         )
-        self.residual = nn.Sequential(nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=1),
-                                     # nn.BatchNorm1d(channels_out))
-        #self.residual = Conv_3_k(channels_in, channels_out)
+        #self.residual = nn.Sequential(nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=stride),
+                                     #nn.BatchNorm1d(channels_out))
+        self.residual = nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=2, padding=0)
 
     def forward(self, x):
+        #print('Double_Conv x ' + str(x.size()))
         y = self.double_conv(x)
+        #print('Double_Conv y ' + str(y.size()))
         s = self.residual(x)
+        #print('Double_Conv s ' + str(s.size()))
         skip = y + s
+        #print('Double_Conv skip ' + str(skip.size()))
         return skip
 
 
@@ -424,11 +453,11 @@ class Down_Conv(nn.Module):
     Down convolution part
     '''
 
-    def __init__(self, channels_in, channels_out):
+    def __init__(self, channels_in, channels_out,stride):
         super().__init__()
         self.encoder = nn.Sequential(
             #nn.MaxPool1d(2, 2),
-            nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=2),
+            #nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=2),
             Double_Conv(channels_in, channels_out)
         )
 
@@ -445,12 +474,26 @@ class Up_Conv(nn.Module):
 
     def __init__(self, channels_in, channels_out):
         super().__init__()
-        self.upsample_layer = nn.Sequential(
-            # nn.MaxPool1d(2, 2),
-            nn.Upsample(scale_factor=2, mode='nearest'),  # interpola y luego hace convolucion de 1x1
+        self.upsample_layer = nn.Sequential(nn.Upsample(scale_factor=2, mode='nearest') , # interpola y luego hace convolucion de 1x1
             nn.Conv1d(channels_in, channels_in // 2, kernel_size=1, stride=1)
         )
-        self.decoder = Double_Conv(channels_in, channels_out)
+        self.double_conv = nn.Sequential(
+            nn.BatchNorm1d(channels_in),
+            nn.ReLU(),
+            nn.Conv1d(channels_in, channels_out, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm1d(channels_out),
+            nn.ReLU(),
+            nn.Conv1d(channels_out, channels_out, kernel_size=3, stride=1, padding=1),
+        )
+        # self.residual = nn.Sequential(nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=stride),
+        # nn.BatchNorm1d(channels_out))
+        #self.residual = nn.Conv1d(channels_in,  channels_in // 2, kernel_size=1, stride=1, padding=0)
+        self.residual = nn.Conv1d(channels_out, channels_out, kernel_size=1, stride=1, padding=0)
+
+
+        #self.residual = nn.Conv1d(channels_in, channels_out, kernel_size=1, stride=2, padding=0)
+        #self.decoder = Double_Conv(channels_in, channels_out)
+        #self.residual = nn.Conv1d(channels_in, channels_in // 2, kernel_size=1, stride=2, padding=0)
 
     def forward(self, x1, x2):
         '''
@@ -459,7 +502,13 @@ class Up_Conv(nn.Module):
         '''
         x1 = self.upsample_layer(x1)
         x = torch.cat([x2, x1], dim=1)  # concantena a lo largo de la dimension de los canales
-        return self.decoder(x)
+        x= self.double_conv(x)
+        s = self.residual(x)
+        skip = x + s
+        return skip
+
+        # x = self.residual(x)
+        # return x
 
 
 # aca se hace el modelo
@@ -472,12 +521,12 @@ class UNET(nn.Module):
 
     def __init__(self, channels_in, channels, num_classes):
         super().__init__()
-        self.first_conv = Double_Conv(channels_in, channels)     # 64, 1024
-        self.down_conv1 = Down_Conv(channels, 2 * channels)      # 128, 512
-        self.down_conv2 = Down_Conv(2 * channels, 4 * channels)  # 256, 256
-        self.down_conv3 = Down_Conv(4 * channels, 8 * channels)  # 512, 128
+        self.first_conv = First_Conv(channels_in, channels)     # 64, 1024
+        self.down_conv1 = Down_Conv(channels, 2 * channels,stride =2)      # 128, 512
+        self.down_conv2 = Down_Conv(2 * channels, 4 * channels,stride = 2)  # 256, 256
+        self.down_conv3 = Down_Conv(4 * channels, 8 * channels,stride = 2)  # 512, 128
 
-        self.middle_conv = Down_Conv(8 * channels, 16 * channels)  # 1024, 64
+        self.middle_conv = Down_Conv(8 * channels, 16 * channels,stride =2)  # 1024, 64
 
         self.up_conv1 = Up_Conv(16 * channels, 8 * channels)
         self.up_conv2 = Up_Conv(8 * channels, 4 * channels)
