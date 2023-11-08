@@ -211,6 +211,8 @@ class MainWindow(QWidget):
 
     def graficar(self,data):
 
+        self.p1.clear()
+        self.p2.clear()
         self.pcg = data
         self.time = np.arange(0, len(self.pcg), 1, dtype=np.float32)
 
@@ -280,7 +282,7 @@ class MainWindow(QWidget):
         self.p1.addItem(self.hLine, ignoreBounds=True)
 
         #self.p1.plot(self.time, self.pcg)
-        cm = pg.ColorMap([0.0,0.5, 1.0], ['r', 'b','g'])
+        cm = pg.ColorMap([0.0,0.5, 1.0], ['c', 'b','g'])
         pen = cm.getPen(span=(0.95, 1.05), width=1, orientation='vertical')
 
         self.p1.plot(self.time, self.preds*1000,pen=pen)
