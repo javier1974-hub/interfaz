@@ -12,7 +12,7 @@ from PyQt6.QtGui import *
 import numpy as np
 import os
 import random
-from UNET import *
+from ResUNET import *
 import itertools
 
 
@@ -101,7 +101,7 @@ class MainWindow(QWidget):
 
 
 
-        self.model = UNET(1, 64, 3)
+        self.model = ResUNET(1, 64, 3)
 
 
         self.intervalo = QLabel("",self)
@@ -187,7 +187,7 @@ class MainWindow(QWidget):
          model_path, ok = QFileDialog.getOpenFileName(self,"Open File", "","Torch model (*.pth) ")
 
 
-         #modelo = UNET(1, 64, 3)
+         modelo = ResUNET(1, 64, 3)
          self.model.load_state_dict(torch.load(model_path)['model'])
          self.model.eval()
 
@@ -242,7 +242,7 @@ class MainWindow(QWidget):
 
     def buttonSegmentClicked(self):
         self.pcg = np.asarray(self.pcg)
-        self.pcg = np.append(self.pcg, self.pcg[0]) # negrada , agrego un elemento porque me quedo de long 1023.-..
+        #self.pcg = np.append(self.pcg, self.pcg[0]) # negrada , agrego un elemento porque me quedo de long 1023.-..
         self.pcg = torch.from_numpy(self.pcg)
         self.pcg = self.pcg.unsqueeze(0)
 
@@ -283,7 +283,7 @@ class MainWindow(QWidget):
         cm = pg.ColorMap([0.0,0.5, 1.0], ['r', 'b','g'])
         pen = cm.getPen(span=(0.95, 1.05), width=1, orientation='vertical')
 
-        self.p1.plot(self.time, self.preds,pen=pen)
+        self.p1.plot(self.time, self.preds*1000,pen=pen)
         #self.p1.plot(self.time, self.pcg, pen=pen)
 
         x1 = np.where(self.preds == 0)

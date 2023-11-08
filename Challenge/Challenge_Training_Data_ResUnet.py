@@ -37,8 +37,8 @@ def resume(model, optimizer, filename):
 
 
 PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/'
-TRAIN_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train1/'
-TRAIN_MASKS_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train_masks1/'
+TRAIN_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train6/'
+TRAIN_MASKS_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train_masks6/'
 TEST_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/test/'
 
 
@@ -111,7 +111,7 @@ class PCG_Dataset(Dataset):
 full_dataset = PCG_Dataset(TRAIN_PATH, TRAIN_MASKS_PATH)
 
 BATCH_SIZE = 8  # tamabio del batch
-TRAIN_SIZE = int(len(full_dataset) * 0.7) - 1  # el 80% del dataset lo usa para entrenamiento
+TRAIN_SIZE = int(len(full_dataset) * 0.7) #- 1  # el 80% del dataset lo usa para entrenamiento
 VAL_SIZE = int((len(full_dataset) - TRAIN_SIZE) / 2)  # el 20% restante lo usa para validacion
 TEST_SIZE = int((len(full_dataset) - TRAIN_SIZE) / 2)  # len(full_dataset) - TRAIN_SIZE - VAL_SIZE
 
@@ -514,7 +514,7 @@ class Up_Conv(nn.Module):
 # aca se hace el modelo
 
 
-class UNET(nn.Module):
+class ResUNET(nn.Module):
     '''
     UNET model
     '''
@@ -556,7 +556,7 @@ class UNET(nn.Module):
 
 def test():
     x = torch.randn((8, 1, 1024))
-    model = UNET(1, 64, 3)
+    model = ResUNET(1, 64, 3)
     return model(x)
 
 
@@ -565,13 +565,13 @@ print(preds.shape)
 
 # comienza el entrenamiento
 
-model = UNET(1, 64, 3)
+model = ResUNET(1, 64, 3)
 # preds = test()
 
 
 # optimiser_unet = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.95)
 optimiser_unet = torch.optim.Adam(model.parameters(), lr=0.001)
-epochs = 40
+epochs = 20
 start_epoch = 0
 
 train_acc_mb, train_cost_mb, val_acc_mb, val_cost_mb, dice_acc_mb, iou_acc_mb, test_acc_mb, test_cost_mb, test_dice_mb, test_iou_mb, train_acc_epoch, train_cost_epoch, val_acc_epoch, val_cost_epoch, dice_acc_epoch, iou_acc_epoch, test_acc_epoch, test_cost_epoch, test_dice_epoch, test_iou_epoch = train(
@@ -647,7 +647,7 @@ torch.save(model.state_dict(), model_path)
 
 # Cargo el modelo previamente guardado
 
-modelo = UNET(1, 64, 3)
+modelo = ResUNET(1, 64, 3)
 modelo.load_state_dict(torch.load(model_path))
 modelo.eval()
 
