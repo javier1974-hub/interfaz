@@ -253,7 +253,10 @@ class MainWindow(QWidget):
         pcg_max = self.pcg.max().item()  # normaliza el pcg ya que van de -1  a 1
         pcg_min = self.pcg.min().item()
         self.pcg = (self.pcg - pcg_min) / (pcg_max - pcg_min)  # ahora queda entre 0 y 1
+        print('tamaño pcg  ' + str( self.pcg.size) )
         self.pcg = self.pcg[None, :]
+
+        print('tamaño pcg  ' + str(self.pcg.size) )
 
         #print(self.pcg)
         self.pcg = self.pcg.to(device, dtype=torch.float32)  # pongo seniales en gpu
