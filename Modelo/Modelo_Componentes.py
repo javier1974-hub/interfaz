@@ -4,6 +4,7 @@ import pyqtgraph as pg
 import scipy as sp
 import scipy.signal as sig
 from scipy.stats import kurtosis
+import emd
 
 def nco(fcw, sr):
     phase =  0
@@ -81,7 +82,7 @@ def S(frec1, frec2,frec3,Dt1, Dt2, Dt3, A1, A2, A3, fs):
             Sonido.append(A3 * np.cos(phase))
     return Sonido
 
-S1=S(3,4,5,3,1,3, 0.8,1,0.8,1000)
+S1=S(2,7,2,3,1,3, 1,1,1,1000)
 Window = sig.windows.gaussian(500, 10)
 S1_2 = sig.filtfilt(Window, np.sum(Window), S1)
 
@@ -91,6 +92,11 @@ S1_3 = Window1 * S1
 S1_3_array = np.asarray(S1_3)
 k = kurtosis(S1_3)
 print(k)
+
+
+imf = emd.sift.sift(S1_3_array)
+print(imf.shape)
+#emd.plotting.plot_imfs(imf)
 
 window_kurt = 10
 # con 30 ya no se ve
@@ -132,21 +138,49 @@ win = pg.plot()
 legend = pg.LegendItem((80,60), offset=(70,20))
 legend.setParentItem(win.graphicsItem())
 
-s1 = pg.PlotDataItem(S1,  pen ='w')
-win.addItem(s1)
-legend.addItem(s1,'Sin Filtrar')
+#s1 = pg.PlotDataItem(S1,  pen ='w')
+#win.addItem(s1)
+#legend.addItem(s1,'Sin Filtrar')
 
-#s1_2 = pg.PlotDataItem(S1_2,  pen ='r')
-#win.addItem(s1_2)
-#legend.addItem(s1_2,'Filtrado Gauss')
+IMF_0 = pg.PlotDataItem(imf[:,0],  pen ='w')
+win.addItem(IMF_0)
+legend.addItem(IMF_0,'IMF 0')
+
+IMF_1 = pg.PlotDataItem(imf[:,1],  pen ='y')
+win.addItem(IMF_1)
+legend.addItem(IMF_1,'IMF 1')
+
+IMF_DIFF_1 = pg.PlotDataItem(np.abs(np.diff(imf[:,1]))*10000,  pen ='g')
+win.addItem(IMF_DIFF_1)
+legend.addItem(IMF_DIFF_1,'IMF 3')
+
+
+IMF_2 = pg.PlotDataItem(imf[:,2],  pen ='c')
+win.addItem(IMF_2)
+legend.addItem(IMF_2,'IMF 2')
+
+
+#IMF_3 = pg.PlotDataItem(imf[:,3],  pen ='g')
+#win.addItem(IMF_3)
+#legend.addItem(IMF_3,'IMF 3')
 
 s1_3 = pg.PlotDataItem(S1_3,  pen ='r')
 win.addItem(s1_3)
 legend.addItem(s1_3,'Mult.  Gauss')
 
-window = pg.PlotDataItem(Window,  pen ='c')
-win.addItem(window)
-legend.addItem(window,'window')
+#window = pg.PlotDataItem(Window,  pen ='c')
+#win.addItem(window)
+#legend.addItem(window,'window')
+
+k= np.abs(np.diff(imf[:,1]))*1000
+
+window_kurt = 100
+# con 30 ya no se ve
+kurt = []
+
+for i in range(1,(len(k)-window_kurt)):
+    kurt.append( kurtosis(k[i:(i + window_kurt)]))
+
 
 Kurt = pg.PlotDataItem(kurt,  pen ='m')
 win.addItem(Kurt)

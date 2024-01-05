@@ -2,10 +2,11 @@ import numpy as np
 from scipy.io import wavfile
 import pyqtgraph as pg
 import scipy as sp
+from scipy.stats import kurtosis
 
 prefix = 'a'
-inicio = 381
-can_files = 409
+inicio = 2
+can_files = 2
 path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
 path_annotation = './Database/annotations/hand_corrected/training-'+ prefix +'_StateAns/'
@@ -51,16 +52,34 @@ for i in range(inicio,can_files+1):
     # primero tengo que armar tramos de 1000 muestras y sacarlos a los archivos que sean
     # con un nombre indicando numero de tramo. A su vez podria considerar overlapping para
     # hacer data augmentation
+
+    data_1k_array = np.asarray(data_1k)
+    k = kurtosis(data_1k)
+    print(k)
+
+    window_kurt = 15
+    # con 30 ya no se ve
+    kurt = []
+
+    for i in range(1, (len(data_1k) - window_kurt)):
+        kurt.append(kurtosis(data_1k_array[i:(i + window_kurt)]))
+
+
+
     win = pg.plot()
-    senial = pg.PlotDataItem(data_1k,  pen ='w')
+
+    Kurt = pg.PlotDataItem(kurt,  pen ='m')
+    win.addItem(Kurt)
+
+    senial = pg.PlotDataItem(data_1k*0.001,  pen ='w')
     win.addItem(senial)
 
-    marcas = pg.PlotDataItem(anotaciones*1000, pen='r')
+    marcas = pg.PlotDataItem(anotaciones*1, pen='r')
     win.addItem(marcas)
 
     text = pg.TextItem(name,color='g')
     win.addItem(text)
-    text.setPos(20,5000)
+    text.setPos(20,50)
 
 
 if __name__ == "__main__":
