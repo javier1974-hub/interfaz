@@ -16,7 +16,7 @@ def nco(fcw, sr):
     return np.cos(phase_result)
 
 
-sr = 22050
+sr = 1000
 ts = 1.0/sr
 duration = 2
 t = np.arange(0,duration,ts)
@@ -82,7 +82,7 @@ def S(frec1, frec2,frec3,Dt1, Dt2, Dt3, A1, A2, A3, fs):
             Sonido.append(A3 * np.cos(phase))
     return Sonido
 
-S1=S(2,7,2,3,1,3, 1,1,1,1000)
+S1=S(1,4,2,3,1,3, .8,1,0.8,1000)
 Window = sig.windows.gaussian(500, 10)
 S1_2 = sig.filtfilt(Window, np.sum(Window), S1)
 
@@ -104,8 +104,6 @@ kurt = []
 
 for i in range(1,(len(S1_3)-window_kurt)):
     kurt.append( kurtosis(S1_3_array[i:(i + window_kurt)]))
-
-
 
 
 # sr = 2000
@@ -138,9 +136,6 @@ win = pg.plot()
 legend = pg.LegendItem((80,60), offset=(70,20))
 legend.setParentItem(win.graphicsItem())
 
-#s1 = pg.PlotDataItem(S1,  pen ='w')
-#win.addItem(s1)
-#legend.addItem(s1,'Sin Filtrar')
 
 IMF_0 = pg.PlotDataItem(imf[:,0],  pen ='w')
 win.addItem(IMF_0)
@@ -152,7 +147,7 @@ legend.addItem(IMF_1,'IMF 1')
 
 IMF_DIFF_1 = pg.PlotDataItem(np.abs(np.diff(imf[:,1]))*10000,  pen ='g')
 win.addItem(IMF_DIFF_1)
-legend.addItem(IMF_DIFF_1,'IMF 3')
+legend.addItem(IMF_DIFF_1,'IMF_DIFF_1')
 
 
 IMF_2 = pg.PlotDataItem(imf[:,2],  pen ='c')
@@ -160,9 +155,6 @@ win.addItem(IMF_2)
 legend.addItem(IMF_2,'IMF 2')
 
 
-#IMF_3 = pg.PlotDataItem(imf[:,3],  pen ='g')
-#win.addItem(IMF_3)
-#legend.addItem(IMF_3,'IMF 3')
 
 s1_3 = pg.PlotDataItem(S1_3,  pen ='r')
 win.addItem(s1_3)
@@ -172,23 +164,30 @@ legend.addItem(s1_3,'Mult.  Gauss')
 #win.addItem(window)
 #legend.addItem(window,'window')
 
-k= np.abs(np.diff(imf[:,1]))*1000
+imf_1= imf[:,1]
 
-window_kurt = 100
+# en el paper usa 140 muestras de ventana con señal muestreada a 44100Hz
+# eso son 3.2 ms
+# entonce con muestreo de 1000Hz son 3-4 muestras
+
+window_kurt = 20
 # con 30 ya no se ve
 kurt = []
 
-for i in range(1,(len(k)-window_kurt)):
-    kurt.append( kurtosis(k[i:(i + window_kurt)]))
+for i in range(1,(len(imf_1)-window_kurt)):
+    kurt.append( kurtosis(imf_1[i:(i + window_kurt)]))
+
+kurt_array = np.asarray(kurt)
+kurt_abs_diff= np.abs(np.diff(kurt_array))*1e-3
 
 
 Kurt = pg.PlotDataItem(kurt,  pen ='m')
 win.addItem(Kurt)
 legend.addItem(Kurt,'kurtosis')
 
-# Result1 = pg.PlotDataItem(result1,  pen ='r')
-# win.addItem(Result1)
-# legend.addItem(Result1,'Sin Filtrar')
+Kurt_abs_diff = pg.PlotDataItem(kurt_abs_diff,  pen ='c')
+win.addItem(Kurt_abs_diff)
+legend.addItem(Kurt_abs_diff,'Abs Diff Kurt imf 1')
 #
 # Acw2 = pg.PlotDataItem(acw2,  pen ='g')
 # win.addItem(Acw2)

@@ -3,6 +3,7 @@ from scipy.io import wavfile
 import pyqtgraph as pg
 import scipy as sp
 from scipy.stats import kurtosis
+import emd
 
 prefix = 'a'
 inicio = 2
@@ -57,25 +58,48 @@ for i in range(inicio,can_files+1):
     k = kurtosis(data_1k)
     print(k)
 
-    window_kurt = 15
+
+
+    #for i in range(1, (len(data_1k) - window_kurt)):
+    #    kurt.append(kurtosis(data_1k_array[i:(i + window_kurt)]))
+
+    imf = emd.sift.sift(data_1k)
+    print(imf.shape)
+
+    #k = np.abs(np.diff(imf[:, 1])) * 1000
+
+    imf_1 = imf[:, 1]
+
+    window_kurt = 3
     # con 30 ya no se ve
     kurt = []
 
-    for i in range(1, (len(data_1k) - window_kurt)):
-        kurt.append(kurtosis(data_1k_array[i:(i + window_kurt)]))
+    for i in range(1, (len(imf_1) - window_kurt)):
+        kurt.append(kurtosis(imf_1[i:(i + window_kurt)]))
 
+    kurt_array = np.asarray(kurt)
+    kurt_abs_diff = np.abs(np.diff(kurt_array))*1e13
 
 
     win = pg.plot()
+    legend = pg.LegendItem((80, 60), offset=(70, 20))
+    legend.setParentItem(win.graphicsItem())
 
-    Kurt = pg.PlotDataItem(kurt,  pen ='m')
-    win.addItem(Kurt)
+    Kurt_abs_diff  = pg.PlotDataItem(kurt_abs_diff,  pen ='m')
+    win.addItem(Kurt_abs_diff)
+    legend.addItem(Kurt_abs_diff, ' abs de Diff kurtosis de IMF 1')
+
+    IMF_DIFF_1 = pg.PlotDataItem(np.abs(np.diff(imf[:, 1])) * 0.01, pen='g')
+    win.addItem(IMF_DIFF_1)
+    legend.addItem(IMF_DIFF_1, 'abs de Diff IMF 1')
 
     senial = pg.PlotDataItem(data_1k*0.001,  pen ='w')
     win.addItem(senial)
+    legend.addItem(senial, 'Senial')
 
     marcas = pg.PlotDataItem(anotaciones*1, pen='r')
     win.addItem(marcas)
+    legend.addItem(marcas, 'mascara')
 
     text = pg.TextItem(name,color='g')
     win.addItem(text)
