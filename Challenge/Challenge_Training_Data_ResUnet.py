@@ -30,15 +30,15 @@ def resume(model, optimizer, filename):
     optimizer.load_state_dict(checkpoint['optimizer'])
 
 
-# PATH = '/Algoritmos/Prueba_Torch_PyCharm/'
-# TRAIN_PATH = '/Algoritmos/Prueba_Torch_PyCharm/train/'
-# TRAIN_MASKS_PATH = '/Algoritmos/Prueba_Torch_PyCharm/train_masks/'
-# TEST_PATH = '/Algoritmos/Prueba_Torch_PyCharm/test/'
+#PATH = '/Algoritmos/Prueba_Torch_PyCharm/'
+#TRAIN_PATH = '/Algoritmos/Prueba_Torch_PyCharm/train/'
+#TRAIN_MASKS_PATH = '/Algoritmos/Prueba_Torch_PyCharm/train_masks/'
+#TEST_PATH = '/Algoritmos/Prueba_Torch_PyCharm/test/'
 
 
 PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/'
-TRAIN_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train6/'
-TRAIN_MASKS_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train_masks6/'
+TRAIN_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train1/'
+TRAIN_MASKS_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/train_masks1/'
 TEST_PATH = 'D:/Algoritmos/Interfaz_Grafica/Challenge/test/'
 
 
@@ -111,7 +111,7 @@ class PCG_Dataset(Dataset):
 full_dataset = PCG_Dataset(TRAIN_PATH, TRAIN_MASKS_PATH)
 
 BATCH_SIZE = 8  # tamabio del batch
-TRAIN_SIZE = int(len(full_dataset) * 0.7) #- 1  # el 80% del dataset lo usa para entrenamiento
+TRAIN_SIZE = int(len(full_dataset) * 0.7) - 1  # el 80% del dataset lo usa para entrenamiento
 VAL_SIZE = int((len(full_dataset) - TRAIN_SIZE) / 2)  # el 20% restante lo usa para validacion
 TEST_SIZE = int((len(full_dataset) - TRAIN_SIZE) / 2)  # len(full_dataset) - TRAIN_SIZE - VAL_SIZE
 

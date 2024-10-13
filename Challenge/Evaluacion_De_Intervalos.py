@@ -4,9 +4,9 @@ import pyqtgraph as pg
 import scipy as sp
 from prettytable import PrettyTable
 
-prefix = 'f'
+prefix = 'a'
 inicio = 1
-can_files = 114
+can_files = 409
 path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
 path_annotation = './Database/annotations/hand_corrected/training-'+ prefix +'_StateAns/'

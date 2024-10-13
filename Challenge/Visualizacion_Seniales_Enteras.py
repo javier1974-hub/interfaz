@@ -6,9 +6,9 @@ from scipy.stats import kurtosis
 import emd
 from matplotlib import pyplot as plt
 
-prefix = 'a'
-inicio = 244
-can_files = 0
+prefix = 'b'
+nro_senial = 41
+can_files = 1
 path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
 path_annotation = './Database/annotations/hand_corrected/training-'+ prefix +'_StateAns/'
@@ -16,8 +16,8 @@ annotation_file_extention = '_StateAns.mat'
 Chunk_Size = 1024
 
 
-#for i in range(inicio,can_files+1):
-name = prefix + str(inicio).zfill(4)
+
+name = prefix + str(nro_senial).zfill(4)
 #print(name)
 file = name + '.wav'
 #print(file)
@@ -35,7 +35,7 @@ samplerate, data_2k = wavfile.read(path_file + name + file_extention)
 data_1k = sp.signal.decimate(data_2k,2)
 
 data_1k = data_1k.astype(float)
-data_1k = (data_1k - data_1k.min()) /(data_1k.max()-data_1k.min())
+
 
 #armo las mascaras
 
@@ -55,74 +55,17 @@ for i in range(len(ann)-1):
 # con un nombre indicando numero de tramo. A su vez podria considerar overlapping para
 # hacer data augmentation
 
-data_1k_array = np.asarray(data_1k)
-k = kurtosis(data_1k)
-print(k)
-
-data_1k_array = (data_1k_array - data_1k_array.min()) /(data_1k_array.max()-data_1k_array.min())
-
-data_1k_array.tofile('data_1k.csv',sep=',')
-
-sample_rate = 1000
-imf = emd.sift.mask_sift(data_1k_array, max_imfs=5)
-emd.plotting.plot_imfs(imf[:sample_rate * 3, :])
-
-IP, IF, IA = emd.spectra.frequency_transform(imf, sample_rate, 'nht')
-
-plt.figure(figsize=(8, 4))
-
-plt.subplot(121)
-# Plot a simple histogram using frequency bins from 0-20Hz
-plt.hist(IF[:, 1], np.linspace(0, 5))
-plt.grid(True)
-plt.title('IF Histogram')
-plt.xticks(np.arange(0, 5, 0.5))
-plt.xlabel('Frequency (Hz)')
-
-plt.subplot(122)
-# Plot an amplitude-weighted histogram using frequency bins from 0-20Hz
-plt.hist(IF[:, 1], np.linspace(0, 5), weights=IA[:, 1])
-plt.grid(True)
-plt.title('IF Histogram\nweighted by IA')
-plt.xticks(np.arange(0, 5, 0.5))
-plt.xlabel('Frequency (Hz)')
-#for i in range(1, (len(data_1k) - window_kurt)):
-#    kurt.append(kurtosis(data_1k_array[i:(i + window_kurt)]))
-
-imf = emd.sift.sift(data_1k)
-print(imf.shape)
-
-#k = np.abs(np.diff(imf[:, 1])) * 1000
-
-imf_2 = imf[:, 2]
 
 
-window_kurt = 35
-# con 30 ya no se ve
-kurt = []
 
-for i in range(1, (len(imf_2) - window_kurt)):
-    kurt.append(kurtosis(imf_2[i:(i + window_kurt)]))
-
-kurt_array = np.asarray(kurt)
-kurt_abs_diff = np.abs(np.diff(kurt_array))
 
 
 win = pg.plot()
 legend = pg.LegendItem((80, 60), offset=(70, 20))
 legend.setParentItem(win.graphicsItem())
 
-Kurt_abs_diff  = pg.PlotDataItem(kurt_abs_diff,  pen ='m')
-win.addItem(Kurt_abs_diff)
-legend.addItem(Kurt_abs_diff, ' abs de Diff kurtosis de IMF 2')
 
-
-
-#IMF_DIFF_1 = pg.PlotDataItem(np.abs(np.diff(imf[:, 1])) * 0.01, pen='g')
-#win.addItem(IMF_DIFF_1)
-#legend.addItem(IMF_DIFF_1, 'abs de Diff IMF 1')
-
-senial = pg.PlotDataItem(data_1k,  pen ='w')
+senial = pg.PlotDataItem(data_1k*0.001,  pen ='w')
 win.addItem(senial)
 legend.addItem(senial, 'Senial')
 

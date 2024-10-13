@@ -10,7 +10,7 @@ path_file = './Database/training-'+ prefix +'/'
 file_extention = '.wav'
 path_annotation = './Database/annotations/hand_corrected/training-'+ prefix +'_StateAns/'
 annotation_file_extention = '_StateAns.mat'
-Chunk_Size = 1024
+Chunk_Size = 1
 
 
 for i in range(inicio,can_files+1):

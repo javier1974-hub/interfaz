@@ -82,7 +82,7 @@ def S(frec1, frec2,frec3,Dt1, Dt2, Dt3, A1, A2, A3, fs):
             Sonido.append(A3 * np.cos(phase))
     return Sonido
 
-S1=S(1,4,2,3,1,3, .8,1,0.8,1000)
+S1=S(1,4,2,3,1,3, 1,1,1,1000)
 Window = sig.windows.gaussian(500, 10)
 S1_2 = sig.filtfilt(Window, np.sum(Window), S1)
 
